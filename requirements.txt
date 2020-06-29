@@ -1,0 +1,2 @@
+tf-nightly
+absl-py >= 0.1.6

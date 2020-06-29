@@ -1,6 +1,5 @@
 # Placeholder for internal Python library.
 
-
 package(
     default_visibility = [
         "//tensorflow_recommenders:__subpackages__",
@@ -40,4 +39,3 @@ py_binary(
         # py/nbformat dep,
     ],
 )
-

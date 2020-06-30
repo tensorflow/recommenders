@@ -1,5 +1,7 @@
 # TensorFlow Recommenders
 
+![TensorFlow Recommenders](https://github.com/tensorflow/recommenders/workflows/TensorFlow%20Recommenders/badge.svg)
+
 TensorFlow Recommenders is a library for building recommender system models
 using TensorFlow.
 

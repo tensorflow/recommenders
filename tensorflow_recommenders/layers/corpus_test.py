@@ -32,7 +32,7 @@ class CorpusTest(tf.test.TestCase, parameterized.TestCase):
       (3, 15, 16),
       # A batch size of 3 ensures the batches are smaller than k.
       (1024, 3),
-      (42, 123),
+      (42, 123, 256),
       (np.int64, np.str)
   ))
   def test_indexed_top_k(self, k, batch_size, num_queries,
@@ -67,7 +67,7 @@ class CorpusTest(tf.test.TestCase, parameterized.TestCase):
       (2, 5),
       # A batch size of 3 ensures the batches are smaller than k.
       (1024, 3),
-      (42, 123),
+      (42, 123, 256),
   ))
   def test_top_k(self, k, batch_size, num_queries, num_candidates, random_seed):
 

@@ -22,7 +22,7 @@ pip install tensorflow-recommenders
 ## Quick start
 
 Building a factorization model for the Movielens 100K dataset is very simple
-([Colab](examples/quickstart.ipynb)):
+([Colab](tensorflow_recommenders/examples/quickstart.ipynb)):
 
 ```python
 import tensorflow_recommenders as tfrs
@@ -78,7 +78,7 @@ model.evaluate(test.batch(4096), return_dict=True)
 
 ## Tutorials
 
--   [Quickstart](examples/tfrs_movielens.ipynb)
--   [Building a Movielens retrieval model](examples/tfrs_movielens.ipynb)
--   [Using context information](examples/movielens_side_information.ipynb)
--   [Multi-objective recommendations](examples/multitask.ipynb)
+-   [Quickstart](tensorflow_recommenders/examples/tfrs_movielens.ipynb)
+-   [Building a Movielens retrieval model](tensorflow_recommenders/examples/tfrs_movielens.ipynb)
+-   [Using context information](tensorflow_recommenders/examples/movielens_side_information.ipynb)
+-   [Multi-objective recommendations](tensorflow_recommenders/examples/multitask.ipynb)

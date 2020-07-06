@@ -22,6 +22,7 @@ from tensorflow_recommenders.losses import batch_softmax
 
 
 class LossTest(tf.test.TestCase):
+  """Loss tests."""
 
   def test_batch_softmax(self):
     """Checks whether batch_softmax works."""

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tensorflow recommenders."""
+"""TensorFlow Recommenders."""
 
 __version__ = "v0.1.0"
 

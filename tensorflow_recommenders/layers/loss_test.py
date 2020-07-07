@@ -24,6 +24,7 @@ from tensorflow_recommenders.layers import loss
 
 
 class LossTest(tf.test.TestCase, parameterized.TestCase):
+  """Loss layers tests."""
 
   @parameterized.parameters(42, 123, 8391, 12390, 1230)
   def test_hard_negative_mining(self, random_seed):

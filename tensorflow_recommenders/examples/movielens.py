@@ -55,23 +55,25 @@ def evaluate(user_model: tf.keras.Model,
 
   if train is not None:
     for row in train.as_numpy_iterator():
-      user_id = int(row["user_id"])
-      movie_id = movie_vocabulary[int(row["movie_id"])]
+      user_id = row["user_id"]
+      movie_id = movie_vocabulary[row["movie_id"]]
       train_user_to_movies[user_id].append(movie_id)
 
   for row in test.as_numpy_iterator():
-    user_id = int(row["user_id"])
-    movie_id = movie_vocabulary[int(row["movie_id"])]
+    user_id = row["user_id"]
+    movie_id = movie_vocabulary[row["movie_id"]]
     test_user_to_movies[user_id].append(movie_id)
 
   movie_embeddings = np.concatenate(
-      list(movies.batch(4096).map(movie_model).as_numpy_iterator()))
+      list(movies.batch(4096).map(
+          lambda x: movie_model({"movie_id": x["movie_id"]})
+      ).as_numpy_iterator()))
 
   precision_values = []
   recall_values = []
 
   for (user_id, test_movies) in test_user_to_movies.items():
-    user_embedding = user_model({"user_id": [user_id]}).numpy()
+    user_embedding = user_model({"user_id": np.array([user_id])}).numpy()
     scores = (user_embedding @ movie_embeddings.T).flatten()
 
     test_movies = np.frombuffer(test_movies, dtype=np.int32)

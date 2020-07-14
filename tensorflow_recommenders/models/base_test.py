@@ -40,7 +40,7 @@ class ModelTest(tf.test.TestCase):
       def call(self, inputs):
         return self._dense(inputs)
 
-      def train_loss(self, inputs):
+      def compute_loss(self, inputs, training=False):
         features, labels = inputs
 
         predictions = self(features)
@@ -78,7 +78,7 @@ class ModelTest(tf.test.TestCase):
                         k=5, name="corpus_categorical_accuracy_at_5")
                 ]))
 
-      def train_loss(self, inputs):
+      def compute_loss(self, inputs, training=False):
         query_features, candidate_features = inputs
 
         query_embeddings = self.query_model(query_features)
@@ -126,7 +126,7 @@ class ModelTest(tf.test.TestCase):
         self.ctr_task = tasks.RankingTask(
             metrics=[tf.keras.metrics.AUC(name="ctr_auc")])
 
-      def train_loss(self, inputs):
+      def compute_loss(self, inputs, training):
         query_features, candidate_features, clicks = inputs
 
         query_embeddings = self.query_model(query_features)

@@ -28,14 +28,9 @@ class Model(tf.keras.Model):
   This is done by asking the user to implement the following methods:
   - `__init__` to set up your model. Variable, task, loss, and metric
     initialization should go here.
-  - `train_loss` to define the training loss. The method takes as input the
+  - `compute_loss` to define the training loss. The method takes as input the
     raw features passed into the model, and returns a loss tensor for training.
     As part of doing so, it should also update the model's metrics.
-  - [Optional] `test_loss` to define the test loss. If not supplied, the
-    `train_loss` method will be used. Overriding this method will allow
-    models to behave differently in training and evaluation. For example,
-    it may be useful to compute a wider set of metrics in evaluation if these
-    metrics are too expensive to compute during training.
   - [Optional] `call` to define how the model computes its predictions. This
     is not always necessary: for example, two-tower retrieval models have two
     well-defined submodels whose `call` methods are normally used directly.
@@ -47,8 +42,8 @@ class Model(tf.keras.Model):
   do this [here](https://keras.io/guides/customizing_what_happens_in_fit/).
   """
 
-  def train_loss(self, inputs, training: bool = True) -> tf.Tensor:
-    """Defines the training loss.
+  def compute_loss(self, inputs, training: bool = False) -> tf.Tensor:
+    """Defines the loss function.
 
     Args:
       inputs: A data structure of tensors: raw inputs to the model. These will
@@ -60,30 +55,17 @@ class Model(tf.keras.Model):
     """
 
     raise NotImplementedError(
-        "Implementers must implement the `train_loss` method.")
-
-  def test_loss(self, inputs) -> tf.Tensor:
-    """Defines the test loss.
-
-    Args:
-      inputs: A data structure of tensors: raw inputs to the model. These will
-        usually contain labels and weights as well as features.
-
-    Returns:
-      Loss tensor.
-    """
-
-    return self.train_loss(inputs)
+        "Implementers must implement the `compute_loss` method.")
 
   def train_step(self, inputs):
-    """Custom train step using the `train_loss` method."""
+    """Custom train step using the `compute_loss` method."""
 
     if isinstance(inputs, tuple) and len(inputs) == 1:
       # Keras has added a (features, labels) tuple; let's unpack it.
       inputs = inputs[0]
 
     with tf.GradientTape() as tape:
-      loss = self.train_loss(inputs)
+      loss = self.compute_loss(inputs, training=True)
 
     gradients = tape.gradient(loss, self.trainable_variables)
     self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
@@ -94,13 +76,13 @@ class Model(tf.keras.Model):
     return metrics
 
   def test_step(self, inputs):
-    """Custom test step using the `test_loss` method."""
+    """Custom test step using the `compute_loss` method."""
 
     if isinstance(inputs, tuple) and len(inputs) == 1:
       # Keras has added a (features, labels) tuple; let's unpack it.
       inputs = inputs[0]
 
-    loss = self.test_loss(inputs)
+    loss = self.compute_loss(inputs, training=False)
 
     metrics = {metric.name: metric.result() for metric in self.metrics}
     metrics["loss"] = loss

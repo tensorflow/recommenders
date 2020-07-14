@@ -30,8 +30,8 @@ py_library(
 )
 
 py_binary(
-    name = "nbclean",
-    srcs = ["nbclean.py"],
+    name = "nbtool",
+    srcs = ["nbtool.py"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [

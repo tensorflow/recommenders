@@ -13,10 +13,12 @@
 # limitations under the License.
 
 # Lint-as: python3
-"""Cleans notebooks at path."""
+"""Tools for cleaning and testing notebooks."""
 
 import glob
 import os
+import subprocess
+import tempfile
 
 from typing import Text
 
@@ -32,9 +34,8 @@ def clean_cell(cell):
     if key in metadata:
       del metadata[key]
 
-  for key in ("execution_count",):
-    if key in cell:
-      del cell[key]
+  if cell["cell_type"] == "code":
+    cell["execution_count"] = 0
 
 
 def clean_notebook(notebook):
@@ -51,8 +52,8 @@ def clean_notebook(notebook):
   return notebook
 
 
-class NBClean:
-  """Cleans notebooks."""
+class NBTool:
+  """Tool for checking and cleaning notebooks."""
 
   def format(self, path):
     """Formats notebooks."""
@@ -79,10 +80,29 @@ class NBClean:
       with open(notebook_path, "w") as notebook_file:
         nbformat.write(notebook, notebook_file)
 
+  def check(self, path: Text):
+    """Executes a notebook, checking for execution errors."""
 
-def main(_):
-  fire.Fire(NBClean, name="nbclean")
+    with tempfile.NamedTemporaryFile(mode="w", delete=True) as fle:
+      fname = fle.name
+      args = ["jupyter", "nbconvert", "--to", "notebook", "--execute",
+              "--ExecutePreprocessor.timeout=600",
+              "--ExecutePreprocessor.kernel_name=python3",
+              "--output", fname, path]
+
+      try:
+        subprocess.check_output(args, stderr=subprocess.STDOUT)
+      except subprocess.CalledProcessError as e:
+        raise Exception(
+            f"Execution of notebook {path} failed: {e.stdout, e.stderr}.")
+
+  def check_all(self, path: Text):
+    """Runs all notebooks under path."""
+    for notebook_path in glob.glob(os.path.join(path, "*ipynb")):
+      print(f"Executing {notebook_path}")
+
+      self.check(notebook_path)
 
 
 if __name__ == "__main__":
-  fire.run()
+  fire.Fire(NBTool, name="nbtool")

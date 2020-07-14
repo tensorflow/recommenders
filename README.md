@@ -51,7 +51,7 @@ class Model(tfrs.Model):
         )
     )
 
-  def train_loss(self, features: Dict[Text, tf.Tensor]) -> tf.Tensor:
+  def compute_loss(self, features: Dict[Text, tf.Tensor], training=False) -> tf.Tensor:
 
     user_embeddings = self.user_model(features["user_id"])
     movie_embeddings = self.item_model(features["movie_id"])

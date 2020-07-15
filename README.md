@@ -25,11 +25,20 @@ Building a factorization model for the Movielens 100K dataset is very simple
 ([Colab](tensorflow_recommenders/examples/quickstart.ipynb)):
 
 ```python
+import tensorflow_datasets as tfds
 import tensorflow_recommenders as tfrs
 
-# Get the data.
-ratings, movies = tfrs.datasets.movielens_100K()
+# Ratings data.
+ratings = tfds.load('movie_lens/100k-ratings', split="train")
+# Features of all the available movies.
+movies = tfds.load('movie_lens/100k-movies', split="train")
 
+# Select the basic features.
+ratings = ratings.map(lambda x: {
+    "movie_id": tf.strings.to_number(x["movie_id"]),
+    "user_id": tf.strings.to_number(x["user_id"])
+})
+movies = movies.map(lambda x: tf.strings.to_number(x["movie_id"]))
 
 # Build a model.
 class Model(tfrs.Model):
@@ -47,7 +56,7 @@ class Model(tfrs.Model):
     # entire dataset of candidates.
     self.task = tfrs.tasks.RetrievalTask(
         corpus_metrics=tfrs.metrics.FactorizedTopK(
-            candidates=movies.batch(128).map(lambda x: self.item_model(x["movie_id"]))
+            candidates=movies.batch(128).map(self.item_model)
         )
     )
 
@@ -78,7 +87,7 @@ model.evaluate(test.batch(4096), return_dict=True)
 
 ## Tutorials
 
--   [Quickstart](tensorflow_recommenders/examples/tfrs_movielens.ipynb)
+-   [Quickstart](tensorflow_recommenders/examples/quickstart.ipynb)
 -   [Building a Movielens retrieval model](tensorflow_recommenders/examples/tfrs_movielens.ipynb)
 -   [Using context information](tensorflow_recommenders/examples/movielens_side_information.ipynb)
 -   [Multi-objective recommendations](tensorflow_recommenders/examples/multitask.ipynb)

@@ -1,0 +1,13 @@
+[flake8]
+ignore = E111,E114,E125,E129,W503,E731
+max-line-length = 80
+
+per-file-ignores =
+    tensorflow_recommenders/__init__.py:F401
+    tensorflow_recommenders/datasets/__init__.py:F401
+    tensorflow_recommenders/examples/__init__.py:F401
+    tensorflow_recommenders/tasks/__init__.py:F401
+    tensorflow_recommenders/layers/__init__.py:F401
+    tensorflow_recommenders/losses/__init__.py:F401
+    tensorflow_recommenders/metrics/__init__.py:F401
+    tensorflow_recommenders/models/__init__.py:F401

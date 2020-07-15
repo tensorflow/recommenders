@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Lint-as: python3
+# pylint: disable=invalid-name
 """The movielens datasets.
 
 MovieLens datasets from the GroupLens group at the University of Minnesota
@@ -164,8 +165,8 @@ class _Movielens100K(_Movielens):
         filenames=str(self.data_dir() / "ml-100k" / "u.item"),
         field_delim="|",
         record_defaults=(
-            [tf.int32, tf.string, "", "", ""] +
-            [tf.float32] * 19
+            [tf.int32, tf.string, "", "", ""]
+            + [tf.float32] * 19
         ),
         header=False)
 
@@ -233,7 +234,7 @@ class _Movielens20M(_Movielens):
     return candidates_data
 
 
-def movielens_100K() -> Tuple[tf.data.Dataset, tf.data.Dataset]:  # pylint: disable=invalid-name
+def movielens_100K() -> Tuple[tf.data.Dataset, tf.data.Dataset]:
   """Movielens 100K dataset.
 
   Returns:
@@ -243,7 +244,7 @@ def movielens_100K() -> Tuple[tf.data.Dataset, tf.data.Dataset]:  # pylint: disa
   return _Movielens100K().load()
 
 
-def movielens_20M() -> Tuple[tf.data.Dataset, tf.data.Dataset]:  # pylint: disable=invalid-name
+def movielens_20M() -> Tuple[tf.data.Dataset, tf.data.Dataset]:
   """Movielens 20M dataset.
 
   Returns:

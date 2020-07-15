@@ -28,8 +28,8 @@ class LossTest(tf.test.TestCase):
     """Checks whether batch_softmax works."""
     predictions = np.array(((6.0, 3.0), (9.0, 5.0)))
     labels = np.identity(2)
-    expected = (-tf.math.log(tf.math.sigmoid(3.0)) -
-                tf.math.log(1 - tf.math.sigmoid(4.0)))
+    expected = (-tf.math.log(tf.math.sigmoid(3.0))
+                - tf.math.log(1 - tf.math.sigmoid(4.0)))
 
     actual = batch_softmax.BatchSoftmax()(labels, predictions)
 
@@ -40,8 +40,8 @@ class LossTest(tf.test.TestCase):
     predictions = np.array(((6.0, 3.0), (9.0, 5.0)))
     labels = np.identity(2)
     example_weights = np.array((1.0, 2.0))
-    expected = (-tf.math.log(tf.math.sigmoid(1.5)) -
-                2.0 * tf.math.log(1 - tf.math.sigmoid(2.0)))
+    expected = (-tf.math.log(tf.math.sigmoid(1.5))
+                - 2.0 * tf.math.log(1 - tf.math.sigmoid(2.0)))
     actual = batch_softmax.BatchSoftmax(temperature=2.0)(
         labels, predictions, example_weights)
     self.assertAllClose(
@@ -51,8 +51,8 @@ class LossTest(tf.test.TestCase):
     predictions = np.array(((6.0, 3.0), (9.0, 5.0)))
     labels = np.identity(2)
     example_weights = np.array((1.0, 2.0))
-    expected = (-tf.math.log(tf.math.sigmoid(1.5)) -
-                2.0 * tf.math.log(1 - tf.math.sigmoid(2.0)))
+    expected = (-tf.math.log(tf.math.sigmoid(1.5))
+                - 2.0 * tf.math.log(1 - tf.math.sigmoid(2.0)))
     actual = batch_softmax.BatchSoftmax(
         temperature=2.0,
         reduction=tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE)(
@@ -64,8 +64,8 @@ class LossTest(tf.test.TestCase):
     predictions = np.array(((6.0, 3.0), (9.0, 5.0)))
     labels = np.identity(2)
     candidate_sampling_probability = np.array((1.0, 0.5))
-    expected = (-tf.math.log(1.0 / (1.0 + 0.5 * tf.math.exp(-3.0))) -
-                1.0 * tf.math.log(0.5 / (tf.math.exp(4.0) + 0.5)))
+    expected = (-tf.math.log(1.0 / (1.0 + 0.5 * tf.math.exp(-3.0)))
+                - 1.0 * tf.math.log(0.5 / (tf.math.exp(4.0) + 0.5)))
     actual = batch_softmax.BatchSoftmax()(
         labels,
         predictions,
@@ -77,8 +77,8 @@ class LossTest(tf.test.TestCase):
   def test_batch_softmax_with_remove_accidental_hits(self):
     predictions = np.array(((6.0, 6.0, 3.0), (6.0, 6.0, 5.0)))
     labels = np.eye(2, 3)
-    expected = (-tf.math.log(1.0 / (1.0 + tf.math.exp(-3.0))) -
-                tf.math.log(1.0 / (1.0 + tf.math.exp(-1.0))))
+    expected = (-tf.math.log(1.0 / (1.0 + tf.math.exp(-3.0)))
+                - tf.math.log(1.0 / (1.0 + tf.math.exp(-1.0))))
     actual = batch_softmax.BatchSoftmax()(
         labels, predictions, candidate_ids=np.array(["a", "a", "b"]))
     self.assertAllClose(

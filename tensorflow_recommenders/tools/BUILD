@@ -9,8 +9,8 @@ licenses(["notice"])
 exports_files(["LICENSE"])
 
 py_binary(
-    name = "docs",
-    srcs = ["docs.py"],
+    name = "build_api_docs",
+    srcs = ["build_api_docs.py"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [

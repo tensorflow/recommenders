@@ -26,8 +26,7 @@ pip install git+https://github.com/tensorflow/docs
 Run the docs generator:
 
 ```shell
-python $(pwd)/tensorflow_recommenders/tools/docs.py -- \
---output_dir="$(pwd)/tensorflow_recommenders/docs/api/"
+python $(pwd)/tensorflow_recommenders/tools/build_api_docs.py
 ```
 """
 
@@ -87,30 +86,28 @@ def _hide_layer_and_module_methods():
       pass
 
 
-class Docs:
-  """Tool for generating docs."""
+def build_api_docs(output_dir: Text = "/tmp/tensorflow_recommenders/api_docs",
+                   code_url_prefix: Text = GITHUB_CODE_PATH,
+                   search_hints: bool = True,
+                   site_path: Text = "recommenders/api_docs/") -> None:
+  """Builds the API docs."""
 
-  def generate(self, output_dir: Text,
-               code_url_prefix: Text = GITHUB_CODE_PATH) -> None:
-    """Generates docs."""
+  _hide_layer_and_module_methods()
 
-    _hide_layer_and_module_methods()
+  print(f"Writing docs to {output_dir}")
 
-    print(f"Writing docs to {output_dir}")
-
-    doc_generator = generate_lib.DocGenerator(
-        root_title="TensorFlow Recommenders",
-        py_modules=[("tfrs", tfrs)],
-        code_url_prefix=code_url_prefix,
-        search_hints=True,
-        site_path="tfrs/api/",
-        callbacks=[
-            public_api.local_definitions_filter,
-            public_api.explicit_package_contents_filter
-        ]
-    )
-    doc_generator.build(output_dir=output_dir)
+  doc_generator = generate_lib.DocGenerator(
+      root_title="TensorFlow Recommenders",
+      py_modules=[("tfrs", tfrs)],
+      code_url_prefix=code_url_prefix,
+      search_hints=search_hints,
+      site_path=site_path,
+      callbacks=[
+          public_api.local_definitions_filter,
+          public_api.explicit_package_contents_filter
+      ])
+  doc_generator.build(output_dir=output_dir)
 
 
 if __name__ == "__main__":
-  fire.Fire(Docs, name="docs")
+  fire.Fire(build_api_docs, name="build_api_docs")

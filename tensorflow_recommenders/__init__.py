@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""TensorFlow Recommenders.
-
-TensorFlow Recommenders is a library for building recommender system models
-using [TensorFlow](https://www.tensorflow.org).
+"""TensorFlow Recommenders is a library for building recommender system models.
 
 It helps with the full workflow of building a recommender system: data
 preparation, model formulation, training, evaluation, and deployment.

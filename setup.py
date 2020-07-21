@@ -33,6 +33,9 @@ setuptools.setup(
     author_email="packages@tensorflow.org",
     packages=setuptools.find_packages(),
     install_requires=REQUIRED_PACKAGES,
+    extras_require={
+        "docs": ["fire", "annoy"],
+    },
     # PyPI package information.
     classifiers=[
         "Development Status :: 3 - Alpha",

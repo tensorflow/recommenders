@@ -1,0 +1,24 @@
+upper_tabs:
+# Tabs left of dropdown menu
+- include: /_upper_tabs_left.yaml
+- include: /api_docs/_upper_tabs_api.yaml
+# Dropdown menu
+- name: Resources
+  path: /resources
+  is_default: true
+  menu:
+  - include: /resources/_menu_toc.yaml
+  lower_tabs:
+    # Subsite tabs
+    other:
+    - name: Guide & Tutorials
+      contents:
+      - title: Quickstart
+        path: /recommenders/quickstart
+
+    - name: API
+      skip_translation: true
+      contents:
+      - include: /recommenders/api_docs/_toc.yaml
+
+- include: /_upper_tabs_right.yaml

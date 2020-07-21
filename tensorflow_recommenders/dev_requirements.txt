@@ -1,0 +1,3 @@
+# Building docs.
+fire
+git+https://github.com/tensorflow/docs

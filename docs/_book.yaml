@@ -14,7 +14,8 @@ upper_tabs:
     - name: Guide & Tutorials
       contents:
       - title: Quickstart
-        path: /recommenders/quickstart
+        path: /recommenders/examples/quickstart
+      - include: /recommenders/examples/_toc.yaml
 
     - name: API
       skip_translation: true

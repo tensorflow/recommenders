@@ -1,0 +1,8 @@
+toc:
+- heading: "Guide"
+- title: Quickstart
+  path: /recommenders/examples/quickstart
+- title: Recommending movies
+  path: /recommenders/examples/movielens
+- title: Using context information
+  path: /recommenders/examples/movielens_side_information

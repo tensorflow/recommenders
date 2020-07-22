@@ -6,3 +6,5 @@ toc:
   path: /recommenders/examples/movielens
 - title: Using context information
   path: /recommenders/examples/movielens_side_information
+- title: Multitask recommenders
+  path: /recommenders/examples/multitask

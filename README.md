@@ -87,7 +87,14 @@ model.evaluate(test.batch(4096), return_dict=True)
 
 ## Tutorials
 
+<<<<<<< HEAD
 -   [Quickstart](https://tensorflow.org/recommenders/examples/quickstart)
 -   [Building a Movielens retrieval model](https://tensorflow.org/recommenders/examples/basic_retrieval)
 -   [Using context information](https://tensorflow.org/recommenders/examples/movielens_side_information)
 -   [Multi-objective recommendations](https://tensorflow.org/recommenders/examples/multitask)
+=======
+-   [Quickstart](tensorflow_recommenders/examples/quickstart.ipynb)
+-   [Building a basic Movielens retrieval model](tensorflow_recommenders/examples/basic_retrieval.ipynb)
+-   [Using context information](tensorflow_recommenders/examples/movielens_side_information.ipynb)
+-   [Multi-objective recommendations](tensorflow_recommenders/examples/multitask.ipynb)
+>>>>>>> Revised description in README.md to reflect name change

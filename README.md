@@ -87,7 +87,7 @@ model.evaluate(test.batch(4096), return_dict=True)
 
 ## Tutorials
 
--   [Quickstart](tensorflow_recommenders/examples/quickstart.ipynb)
--   [Building a Movielens retrieval model](tensorflow_recommenders/examples/tfrs_movielens.ipynb)
--   [Using context information](tensorflow_recommenders/examples/movielens_side_information.ipynb)
--   [Multi-objective recommendations](tensorflow_recommenders/examples/multitask.ipynb)
+-   [Quickstart](https://tensorflow.org/recommenders/examples/quickstart)
+-   [Building a Movielens retrieval model](https://tensorflow.org/recommenders/examples/tfrs_movielens)
+-   [Using context information](https://tensorflow.org/recommenders/examples/movielens_side_information)
+-   [Multi-objective recommendations](https://tensorflow.org/recommenders/examples/multitask)

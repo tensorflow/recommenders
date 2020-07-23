@@ -12,7 +12,6 @@ py_library(
     srcs = ["__init__.py"],
     srcs_version = "PY3",
     deps = [
-        "//tensorflow_recommenders/datasets",
         "//tensorflow_recommenders/examples",
         "//tensorflow_recommenders/layers",
         "//tensorflow_recommenders/losses",

@@ -17,4 +17,3 @@
 
 from tensorflow_recommenders.layers import corpus
 from tensorflow_recommenders.layers import loss
-from tensorflow_recommenders.layers import scoring

@@ -18,7 +18,6 @@ py_library(
     deps = [
         ":corpus",
         ":loss",
-        ":scoring",
     ],
 )
 
@@ -38,15 +37,6 @@ py_library(
     srcs_version = "PY3",
     deps = [
         # py/numpy dep,
-        # py/tensorflow dep,
-    ],
-)
-
-py_library(
-    name = "scoring",
-    srcs = ["scoring.py"],
-    srcs_version = "PY3",
-    deps = [
         # py/tensorflow dep,
     ],
 )

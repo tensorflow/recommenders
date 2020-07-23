@@ -159,6 +159,41 @@ class ModelTest(tf.test.TestCase):
     self.assertIn("corpus_categorical_accuracy_at_5", metrics_)
     self.assertIn("ctr_auc", metrics_)
 
+  def test_regularization_losses(self):
+
+    class Model(models.Model):
+
+      def __init__(self):
+        super().__init__()
+        self._dense = tf.keras.layers.Dense(1)
+        self.task = tasks.RankingTask(
+            loss=tf.keras.losses.BinaryCrossentropy(),
+            metrics=[tf.keras.metrics.BinaryAccuracy(name="accuracy")])
+
+      def call(self, inputs):
+        self.add_loss(1000.0)
+        return self._dense(inputs)
+
+      def compute_loss(self, inputs, training=False):
+        features, labels = inputs
+
+        predictions = self(features)
+
+        return self.task(predictions=predictions, labels=labels)
+
+    data = tf.data.Dataset.from_tensor_slices(
+        (np.random.normal(size=(10, 3)), np.ones(10)))
+
+    model = Model()
+    model.compile()
+    model.fit(data.batch(2))
+    metrics_ = model.evaluate(data.batch(2), return_dict=True)
+
+    self.assertIn("loss", metrics_)
+    self.assertIn("accuracy", metrics_)
+
+    self.assertEqual(metrics_["regularization_loss"], 1000.0)
+
 
 if __name__ == "__main__":
   tf.test.main()

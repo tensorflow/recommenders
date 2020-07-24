@@ -3,7 +3,7 @@ toc:
 - title: Quickstart
   path: /recommenders/examples/quickstart
 - title: Recommending movies
-  path: /recommenders/examples/movielens
+  path: /recommenders/examples/basic_retrieval
 - title: Using context information
   path: /recommenders/examples/movielens_side_information
 - title: Multitask recommenders

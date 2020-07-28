@@ -16,8 +16,19 @@ py_library(
     srcs = ["__init__.py"],
     srcs_version = "PY3",
     deps = [
+        ":ann",
         ":corpus",
         ":loss",
+    ],
+)
+
+py_library(
+    name = "ann",
+    srcs = ["ann.py"],
+    srcs_version = "PY3",
+    deps = [
+        # py/numpy dep,
+        # py/tensorflow dep,
     ],
 )
 
@@ -42,6 +53,18 @@ py_library(
 )
 
 # Tests
+py_test(
+    name = "ann_test",
+    srcs = ["ann_test.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":ann",
+        # py/numpy dep,
+        # py/tensorflow dep,
+    ],
+)
+
 py_test(
     name = "corpus_test",
     srcs = ["corpus_test.py"],

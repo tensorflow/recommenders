@@ -5,6 +5,6 @@ toc:
 - title: Recommending movies
   path: /recommenders/examples/basic_retrieval
 - title: Using context information
-  path: /recommenders/examples/movielens_side_information
+  path: /recommenders/examples/side_information_retrieval
 - title: Multitask recommenders
   path: /recommenders/examples/multitask

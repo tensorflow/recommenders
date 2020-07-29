@@ -8,3 +8,5 @@ toc:
   path: /recommenders/examples/movielens_side_information
 - title: Multitask recommenders
   path: /recommenders/examples/multitask
+- title: Incorporating metadata features
+  path: /recommenders/examples/featurization

@@ -34,16 +34,18 @@ class ANN(abc.ABC):
   """
 
   @abc.abstractmethod
-  def index(self,
-            candidates: tf.Tensor,
-            identifiers: Optional[tf.Tensor] = None) -> None:
+  def index(
+      self,
+      candidates: Union[tf.Tensor, tf.data.Dataset],
+      identifiers: Optional[Union[tf.Tensor, tf.data.Dataset]] = None) -> None:
     """Builds the retrieval index.
 
     Args:
-      candidates: Matrix of candidate embeddings.
-      identifiers: Optional tensor of candidate identifiers. If given these will
-        be return to identify top candidates when performing searches. If not
-        given, indices into the candidates tensor will be given instead.
+      candidates: Matrix (or dataset) of candidate embeddings.
+      identifiers: Optional tensor (or dataset) of candidate identifiers. If
+        given these will be return to identify top candidates when performing
+        searches. If not given, indices into the candidates tensor will be
+        given instead.
     """
 
     raise NotImplementedError()
@@ -58,7 +60,7 @@ class ANN(abc.ABC):
       queries: Query features.
 
     Returns:
-      Tuple of (top candidate identifiers, top candidate scores).
+      Tuple of (top candidate scores, top candidate identifiers).
 
     Raises:
       ValueError if `index` has not been called.
@@ -88,23 +90,31 @@ class BruteForce(ANN, tf.keras.Model):
 
     self.query_model = query_model
 
-  def index(self,
-            candidates: tf.Tensor,
-            identifiers: Optional[tf.Tensor] = None) -> None:
+  def index(
+      self,
+      candidates: Union[tf.Tensor, tf.data.Dataset],
+      identifiers: Optional[Union[tf.Tensor, tf.data.Dataset]] = None) -> None:
     """Builds the retrieval index.
 
     When called multiple times the existing index will be dropped and a new one
     created.
 
     Args:
-      candidates: Matrix of candidate embeddings.
-      identifiers: Optional tensor of candidate identifiers. If given these will
-        be return to identify top candidates when performing searches. If not
-        given, indices into the candidates tensor will be given instead.
+      candidates: Matrix (or dataset) of candidate embeddings.
+      identifiers: Optional tensor (or dataset) of candidate identifiers. If
+        given these will be return to identify top candidates when performing
+        searches. If not given, indices into the candidates tensor will be
+        given instead.
     """
 
     if identifiers is None:
       identifiers = tf.range(candidates.shape[0])
+
+    if isinstance(candidates, tf.data.Dataset):
+      candidates = tf.concat(list(candidates), axis=0)  # pytype: disable=wrong-arg-types
+
+    if isinstance(identifiers, tf.data.Dataset):
+      identifiers = tf.concat(list(identifiers), axis=0)  # pytype: disable=wrong-arg-types
 
     if tf.rank(candidates) != 2:
       raise ValueError(
@@ -140,7 +150,7 @@ class BruteForce(ANN, tf.keras.Model):
       num_candidates: The number of candidates to retrieve.
 
     Returns:
-      Tuple of (top candidate identifiers, top candidate scores).
+      Tuple of (top candidate scores, top candidate identifiers).
 
     Raises:
       ValueError if `index` has not been called.
@@ -157,4 +167,4 @@ class BruteForce(ANN, tf.keras.Model):
 
     values, indices = tf.math.top_k(scores, k=num_candidates)
 
-    return tf.gather(self._identifiers, indices), values
+    return values, tf.gather(self._identifiers, indices)

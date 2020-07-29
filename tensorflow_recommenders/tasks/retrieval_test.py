@@ -47,8 +47,8 @@ class RetrievalTaskTest(tf.test.TestCase):
                     k=5, name="corpus_categorical_accuracy_at_5")
             ]))
 
-    # all_pair_scores: [[6, 3], [9, 5]].
-    # normalized logits: [[3, 0], [4, 0]].
+    # All_pair_scores: [[6, 3], [9, 5]].
+    # Normalized logits: [[3, 0], [4, 0]].
     expected_loss = -np.log(_sigmoid(3.0)) - np.log(1 - _sigmoid(4.0))
     expected_metrics = {
         "categorical_accuracy_at_1": 1. / 2,

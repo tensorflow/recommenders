@@ -4,9 +4,9 @@ toc:
   path: /recommenders/examples/quickstart
 - title: Recommending movies
   path: /recommenders/examples/basic_retrieval
+- title: "Using side features: feature preprocessing"
+  path: /recommenders/examples/featurization
 - title: Using context information
   path: /recommenders/examples/movielens_side_information
 - title: Multitask recommenders
   path: /recommenders/examples/multitask
-- title: Incorporating metadata features
-  path: /recommenders/examples/featurization

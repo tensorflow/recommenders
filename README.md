@@ -55,7 +55,7 @@ class Model(tfrs.Model):
     # Set up a retrieval task and evaluation metrics over the
     # entire dataset of candidates.
     self.task = tfrs.tasks.Retrieval(
-        corpus_metrics=tfrs.metrics.FactorizedTopK(
+        metrics=tfrs.metrics.FactorizedTopK(
             candidates=movies.batch(128).map(self.item_model)
         )
     )

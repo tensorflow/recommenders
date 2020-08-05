@@ -28,7 +28,7 @@ py_library(
         # py/tensorflow dep,
         "//tensorflow_recommenders/layers",
         "//tensorflow_recommenders/losses",
-        "//tensorflow_recommenders/metrics",
+        "//tensorflow_recommenders/metrics:corpus",
     ],
 )
 

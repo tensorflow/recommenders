@@ -50,7 +50,7 @@ landing_page:
         movie_model = tf.keras.Sequential([...])
 
         # Define your objectives.
-        task = tfrs.tasks.Retrieval(corpus_metrics=tfrs.metrics.FactorizedTopK(
+        task = tfrs.tasks.Retrieval(metrics=tfrs.metrics.FactorizedTopK(
             movies.batch(128).map(movie_model)
           )
         )

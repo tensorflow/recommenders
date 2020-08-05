@@ -15,13 +15,13 @@
 # Lint-as: python3
 """A factorized retrieval task."""
 
-from typing import List, Optional, Text
+from typing import Optional, Text
 
 import tensorflow as tf
 
 from tensorflow_recommenders import layers
 from tensorflow_recommenders import losses
-from tensorflow_recommenders import metrics
+from tensorflow_recommenders.metrics.corpus import FactorizedTopK
 
 
 class Retrieval(tf.keras.layers.Layer):
@@ -42,23 +42,18 @@ class Retrieval(tf.keras.layers.Layer):
   def __init__(
       self,
       loss: Optional[tf.keras.losses.Loss] = None,
-      batch_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
-      corpus_metrics: Optional[metrics.corpus.FactorizedTopK] = None,
+      metrics: Optional[FactorizedTopK] = None,
       name: Optional[Text] = None) -> None:
     """Initializes the task.
 
     Args:
       loss: Loss function. Defaults to `BatchSoftmaxLoss`.
-      batch_metrics: List of Keras metrics to be evaluated on each
-        batch. These can measure how good the model is at differentiating true
-        candidates from negative candidates within a batch. These metrics are
-        approximate, but can be computed quickly during training.
-      corpus_metrics: Object for evaluating top-K metrics over a
+      metrics: Object for evaluating top-K metrics over a
        corpus of candidates. These metrics measure how good the model is at
-       picking the true candidate out of all possible candidates in the system,
-       and are a much better guide to model quality than batch metrics.
-       However, because they range over the entire candidate set, they are
-       usually much slower to compute.
+       picking the true candidate out of all possible candidates in the system.
+       Note, because the metrics range over the entire candidate set, they are
+       usually much slower to compute. Consider set `evaluate_metrics=False`
+       during training to save the time in computing the metrics.
       name: Optional task name.
     """
 
@@ -66,8 +61,7 @@ class Retrieval(tf.keras.layers.Layer):
 
     self._loss = loss if loss is not None else losses.BatchSoftmax()
 
-    self._batch_evaluation_metrics = batch_metrics or []
-    self._corpus_evaluation_metrics = corpus_metrics
+    self._corpus_metrics = metrics
 
   def call(self,
            query_embeddings: tf.Tensor,
@@ -75,7 +69,7 @@ class Retrieval(tf.keras.layers.Layer):
            sample_weight: Optional[tf.Tensor] = None,
            candidate_sampling_probability: Optional[tf.Tensor] = None,
            candidate_ids: Optional[tf.Tensor] = None,
-           evaluate_corpus_metrics: bool = True) -> tf.Tensor:
+           evaluate_metrics: bool = True) -> tf.Tensor:
     """Computes the task loss and metrics.
 
     The main argument are pairs of query and candidate embeddings: the first row
@@ -99,9 +93,8 @@ class Retrieval(tf.keras.layers.Layer):
         enables removing accidental hits of examples used as negatives. An
         accidental hit is defined as an candidate that is used as an in-batch
         negative but has the same id with the positive candidate.
-      evaluate_corpus_metrics: If true, corpus metrics will be computed. Because
-        evaluating corpus metrics may be slow, consider disabling this
-        in training.
+      evaluate_metrics: If true, metrics will be computed. Because evaluating
+        metrics may be slow, consider disabling this in training.
 
     Returns:
       loss: Tensor of loss values.
@@ -124,17 +117,12 @@ class Retrieval(tf.keras.layers.Layer):
 
     loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)
 
-    for metric in self._batch_evaluation_metrics:
-      metric.update_state(
-          y_true=labels, y_pred=scores, sample_weight=sample_weight)
-
-    if not self._corpus_evaluation_metrics:
+    if not self._metrics:
       return loss
 
-    if not evaluate_corpus_metrics:
+    if not evaluate_metrics:
       return loss
 
-    self._corpus_evaluation_metrics.update_state(query_embeddings,
-                                                 candidate_embeddings)
+    self._corpus_metrics.update_state(query_embeddings, candidate_embeddings)
 
     return loss

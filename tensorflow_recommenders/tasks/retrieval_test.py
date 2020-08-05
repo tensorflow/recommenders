@@ -36,11 +36,7 @@ class RetrievalTest(tf.test.TestCase):
         np.array([[0, 0, 0]] * 20, dtype=np.float32))
 
     task = retrieval.Retrieval(
-        batch_metrics=[
-            tf.keras.metrics.TopKCategoricalAccuracy(
-                k=1, name="categorical_accuracy_at_1")
-        ],
-        corpus_metrics=metrics.FactorizedTopK(
+        metrics=metrics.FactorizedTopK(
             candidates=candidate_dataset.batch(16),
             metrics=[
                 tf.keras.metrics.TopKCategoricalAccuracy(
@@ -51,7 +47,6 @@ class RetrievalTest(tf.test.TestCase):
     # Normalized logits: [[3, 0], [4, 0]].
     expected_loss = -np.log(_sigmoid(3.0)) - np.log(1 - _sigmoid(4.0))
     expected_metrics = {
-        "categorical_accuracy_at_1": 1. / 2,
         "corpus_categorical_accuracy_at_5": 1.0,
         "factorized_top_k": [1.0]
     }

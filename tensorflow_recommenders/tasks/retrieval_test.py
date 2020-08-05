@@ -26,7 +26,7 @@ def _sigmoid(x):
   return 1. / (1 + np.exp(-x))
 
 
-class RetrievalTaskTest(tf.test.TestCase):
+class RetrievalTest(tf.test.TestCase):
 
   def test_task(self):
 
@@ -35,7 +35,7 @@ class RetrievalTaskTest(tf.test.TestCase):
     candidate_dataset = tf.data.Dataset.from_tensor_slices(
         np.array([[0, 0, 0]] * 20, dtype=np.float32))
 
-    task = retrieval.RetrievalTask(
+    task = retrieval.Retrieval(
         batch_metrics=[
             tf.keras.metrics.TopKCategoricalAccuracy(
                 k=1, name="categorical_accuracy_at_1")

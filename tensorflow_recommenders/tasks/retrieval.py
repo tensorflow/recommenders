@@ -24,7 +24,7 @@ from tensorflow_recommenders import losses
 from tensorflow_recommenders import metrics
 
 
-class RetrievalTask(tf.keras.layers.Layer):
+class Retrieval(tf.keras.layers.Layer):
   """A factorized retrieval task.
 
   Recommender systems are often composed of two components:

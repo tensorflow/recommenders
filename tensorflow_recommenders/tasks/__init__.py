@@ -15,4 +15,4 @@
 """Task libraries."""
 
 from tensorflow_recommenders.tasks.ranking import RankingTask
-from tensorflow_recommenders.tasks.retrieval import RetrievalTask
+from tensorflow_recommenders.tasks.retrieval import Retrieval

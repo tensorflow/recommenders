@@ -69,7 +69,7 @@ class ModelTest(tf.test.TestCase):
         self.query_model = tf.keras.layers.Dense(16)
         self.candidate_model = tf.keras.layers.Dense(16)
 
-        self.task = tasks.RetrievalTask(
+        self.task = tasks.Retrieval(
             corpus_metrics=metrics.FactorizedTopK(
                 candidates=candidate_dataset.map(self.candidate_model),
                 k=5,
@@ -115,7 +115,7 @@ class ModelTest(tf.test.TestCase):
         self.candidate_model = tf.keras.layers.Dense(16)
         self.ctr_model = tf.keras.layers.Dense(1, activation="sigmoid")
 
-        self.retrieval_task = tasks.RetrievalTask(
+        self.retrieval_task = tasks.Retrieval(
             corpus_metrics=metrics.FactorizedTopK(
                 candidates=candidate_dataset.map(self.candidate_model),
                 k=5,

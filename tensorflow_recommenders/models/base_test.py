@@ -33,7 +33,7 @@ class ModelTest(tf.test.TestCase):
       def __init__(self):
         super().__init__()
         self._dense = tf.keras.layers.Dense(1)
-        self.task = tasks.RankingTask(
+        self.task = tasks.Ranking(
             loss=tf.keras.losses.BinaryCrossentropy(),
             metrics=[tf.keras.metrics.BinaryAccuracy(name="accuracy")])
 
@@ -123,7 +123,7 @@ class ModelTest(tf.test.TestCase):
                     tf.keras.metrics.TopKCategoricalAccuracy(
                         k=5, name="corpus_categorical_accuracy_at_5")
                 ]))
-        self.ctr_task = tasks.RankingTask(
+        self.ctr_task = tasks.Ranking(
             metrics=[tf.keras.metrics.AUC(name="ctr_auc")])
 
       def compute_loss(self, inputs, training):
@@ -166,7 +166,7 @@ class ModelTest(tf.test.TestCase):
       def __init__(self):
         super().__init__()
         self._dense = tf.keras.layers.Dense(1)
-        self.task = tasks.RankingTask(
+        self.task = tasks.Ranking(
             loss=tf.keras.losses.BinaryCrossentropy(),
             metrics=[tf.keras.metrics.BinaryAccuracy(name="accuracy")])
 

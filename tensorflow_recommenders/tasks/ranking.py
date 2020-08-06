@@ -20,7 +20,7 @@ from typing import List, Optional, Text
 import tensorflow as tf
 
 
-class RankingTask(tf.keras.layers.Layer):
+class Ranking(tf.keras.layers.Layer):
   """A ranking task.
 
   Recommender systems are often composed of two components:

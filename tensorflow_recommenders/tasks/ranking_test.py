@@ -22,11 +22,11 @@ import tensorflow as tf
 from tensorflow_recommenders.tasks import ranking
 
 
-class RankingTaskTest(tf.test.TestCase):
+class RankingTest(tf.test.TestCase):
 
   def test_task(self):
 
-    task = ranking.RankingTask(
+    task = ranking.Ranking(
         metrics=[tf.keras.metrics.BinaryAccuracy(name="accuracy")])
 
     predictions = tf.constant([[1], [0.3]], dtype=tf.float32)

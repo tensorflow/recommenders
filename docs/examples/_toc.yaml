@@ -7,6 +7,6 @@ toc:
 - title: "Using side features: feature preprocessing"
   path: /recommenders/examples/featurization
 - title: Using context information
-  path: /recommenders/examples/side_information_retrieval
+  path: /recommenders/examples/movielens_side_information
 - title: Multitask recommenders
   path: /recommenders/examples/multitask

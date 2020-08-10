@@ -20,7 +20,6 @@ from typing import Optional, Text
 import tensorflow as tf
 
 from tensorflow_recommenders import layers
-from tensorflow_recommenders import losses
 from tensorflow_recommenders.metrics.corpus import FactorizedTopK
 
 
@@ -43,25 +42,36 @@ class Retrieval(tf.keras.layers.Layer):
       self,
       loss: Optional[tf.keras.losses.Loss] = None,
       metrics: Optional[FactorizedTopK] = None,
+      temperature: Optional[float] = None,
+      num_hard_negatives: Optional[int] = None,
       name: Optional[Text] = None) -> None:
     """Initializes the task.
 
     Args:
-      loss: Loss function. Defaults to `BatchSoftmaxLoss`.
+      loss: Loss function. Defaults to
+        `tf.keras.losses.CategoricalCrossentropy`.
       metrics: Object for evaluating top-K metrics over a
        corpus of candidates. These metrics measure how good the model is at
        picking the true candidate out of all possible candidates in the system.
        Note, because the metrics range over the entire candidate set, they are
        usually much slower to compute. Consider set `evaluate_metrics=False`
        during training to save the time in computing the metrics.
+      temperature: Temperature of the softmax.
+      num_hard_negatives: If positive, the `num_hard_negatives` negative
+        examples with largest logits are kept when computing cross-entropy loss.
+        If larger than batch size or non-positive, all the negative examples are
+        kept.
       name: Optional task name.
     """
 
     super().__init__(name=name)
 
-    self._loss = loss if loss is not None else losses.BatchSoftmax()
+    self._loss = loss if loss is not None else tf.keras.losses.CategoricalCrossentropy(
+        from_logits=True, reduction=tf.keras.losses.Reduction.SUM)
 
     self._corpus_metrics = metrics
+    self._temperature = temperature
+    self._num_hard_negatives = num_hard_negatives
 
   def call(self,
            query_embeddings: tf.Tensor,
@@ -114,6 +124,14 @@ class Retrieval(tf.keras.layers.Layer):
 
     if candidate_ids is not None:
       scores = layers.loss.RemoveAccidentalHits()(labels, scores, candidate_ids)
+
+    if self._num_hard_negatives is not None:
+      scores, labels = layers.loss.HardNegativeMining(self._num_hard_negatives)(
+          scores,
+          labels)
+
+    if self._temperature is not None:
+      scores = scores / self._temperature
 
     loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)
 

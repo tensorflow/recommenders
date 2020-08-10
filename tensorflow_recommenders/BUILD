@@ -14,7 +14,6 @@ py_library(
     deps = [
         "//tensorflow_recommenders/examples",
         "//tensorflow_recommenders/layers",
-        "//tensorflow_recommenders/losses",
         "//tensorflow_recommenders/metrics",
         "//tensorflow_recommenders/models",
         "//tensorflow_recommenders/tasks",

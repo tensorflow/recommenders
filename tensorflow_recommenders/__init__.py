@@ -25,7 +25,6 @@ __version__ = "v0.1.0"
 
 from tensorflow_recommenders import examples
 from tensorflow_recommenders import layers
-from tensorflow_recommenders import losses
 from tensorflow_recommenders import metrics
 from tensorflow_recommenders import models
 from tensorflow_recommenders import tasks

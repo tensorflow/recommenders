@@ -39,7 +39,7 @@ class FactorizedTopK(tf.keras.metrics.Metric):
       candidates: tf.data.Dataset,
       metrics: Optional[Sequence[tf.keras.metrics.Metric]] = None,
       k: int = 100,
-      name: Optional[Text] = None,
+      name: Text = "factorized_top_k",
   ) -> None:
     """Initializes the metric.
 

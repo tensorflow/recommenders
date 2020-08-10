@@ -1,12 +1,15 @@
 toc:
-- heading: "Guide"
-- title: Quickstart
-  path: /recommenders/examples/quickstart
-- title: Recommending movies
+- heading: "Beginner"
+  style: divider
+- title: "Recommending movies: retrieval"
   path: /recommenders/examples/basic_retrieval
+- title: "Recommending movies: ranking"
+  path: /recommenders/examples/basic_ranking
 - title: "Using side features: feature preprocessing"
   path: /recommenders/examples/featurization
-- title: Using context information
+- title: "Using context information"
   path: /recommenders/examples/movielens_side_information
-- title: Multitask recommenders
+- heading: "Intermediate"
+  style: divider
+- title: "Multitask recommenders"
   path: /recommenders/examples/multitask

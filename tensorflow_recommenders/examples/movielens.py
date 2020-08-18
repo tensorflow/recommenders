@@ -17,6 +17,7 @@
 
 import array
 import collections
+import random
 
 from typing import Dict, Optional, Text
 
@@ -92,3 +93,131 @@ def evaluate(user_model: tf.keras.Model,
       "precision_at_k": np.mean(precision_values),
       "recall_at_k": np.mean(recall_values)
   }
+
+
+def _sample_list(
+    negative_movie_id_set,
+    feature_lists,
+    num_pos_examples_per_list,
+    num_neg_examples_per_list,
+):
+  """Function for sampling a list example from given feature lists."""
+  sampled_indices = random.sample(
+      range(len(feature_lists["movie_id"])),
+      num_pos_examples_per_list,
+  )
+  sampled_pos_movie_ids = [
+      feature_lists["movie_id"][idx]
+      for idx in sampled_indices
+  ]
+  sampled_pos_ratings = [
+      feature_lists["user_rating"][idx]
+      for idx in sampled_indices
+  ]
+  sampled_neg_movie_ids = random.sample(
+      negative_movie_id_set,
+      num_neg_examples_per_list,
+  )
+  # Assign score 0 to movies that are not rated by the user, so they would
+  # be placed at the bottom of the ranking.
+  sampled_neg_ratings = [
+      0. for _ in range(num_neg_examples_per_list)
+  ]
+  sampled_movie_ids = sampled_pos_movie_ids + sampled_neg_movie_ids
+  sampled_ratings = sampled_pos_ratings + sampled_neg_ratings
+  return (
+      tf.concat(sampled_movie_ids, axis=0),
+      tf.concat(sampled_ratings, axis=0),
+  )
+
+
+def movielens_to_listwise(
+    rating_dataset,
+    movie_dataset,
+    train_num_list_per_user=10,
+    test_num_list_per_user=2,
+    num_pos_examples_per_list=10,
+    num_neg_examples_per_list=0,
+):
+  """Function for converting the MovieLens 100K dataset to a listwise dataset.
+
+  Args:
+      rating_dataset:
+        The MovieLens 100K ratings dataset loaded from TFDS.
+      movie_dataset:
+        The MovieLens 100K movies dataset loaded from TFDS.
+      train_num_list_per_user:
+        An integer representing the number of lists that should be sampled for
+        each user in the training dataset.
+      test_num_list_per_user:
+        An integer representing the number of lists that should be sampled for
+        each user in the testing dataset.
+      num_pos_examples_per_list:
+        An integer representing the number of movies to be sampled for each list
+        from the list of movies rated by the user.
+      num_neg_examples_per_list:
+        An integer representing the number of movies in each list to be sampled
+        from movies that are not rated by the user.
+
+  Returns:
+      A tuple of tensorflow datasets, each containing list examples. The first
+      dataset is the training dataset and the second dataset is the testing
+      dataset.
+
+      Each example contains three keys: "user_id", "movie_id", and
+      "user_rating". "user_id" maps to a string tensor that represents the user
+      id for the example. "movie_id" maps to a tensor of shape
+      [sum(num_example_per_list)] with dtype tf.string. It represents the list
+      of candidate movie ids. "user_rating" maps to a tensor of shape
+      [sum(num_example_per_list)] with dtype tf.float32. It represents the
+      rating of each movie in the candidate list. Movies that were not rated by
+      the user in an example would receive a rating of 0.
+  """
+  example_lists_by_user = collections.defaultdict(lambda: {
+      "movie_id": [],
+      "user_rating": [],
+  })
+  for example in rating_dataset:
+    user_id = example["user_id"].numpy()
+    example_lists_by_user[user_id]["movie_id"].append(
+        example["movie_id"],
+    )
+    example_lists_by_user[user_id]["user_rating"].append(
+        example["user_rating"],
+    )
+  movie_id_vocab = set(
+      movie_dataset.map(lambda x: x["movie_id"]).as_numpy_iterator(),
+  )
+
+  train_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
+  test_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
+  for user_id, feature_lists in example_lists_by_user.items():
+    rated_movie_id_set = set([
+        example.numpy()
+        for example in feature_lists["movie_id"]
+    ])
+    negative_movie_id_set = movie_id_vocab - rated_movie_id_set
+    for _ in range(train_num_list_per_user):
+      sampled_movie_ids, sampled_ratings = _sample_list(
+          negative_movie_id_set,
+          feature_lists,
+          num_pos_examples_per_list,
+          num_neg_examples_per_list,
+      )
+      train_tensor_slices["user_id"].append(user_id)
+      train_tensor_slices["movie_id"].append(sampled_movie_ids)
+      train_tensor_slices["user_rating"].append(sampled_ratings)
+    for _ in range(test_num_list_per_user):
+      sampled_movie_ids, sampled_ratings = _sample_list(
+          negative_movie_id_set,
+          feature_lists,
+          num_pos_examples_per_list,
+          num_neg_examples_per_list,
+      )
+      test_tensor_slices["user_id"].append(user_id)
+      test_tensor_slices["movie_id"].append(sampled_movie_ids)
+      test_tensor_slices["user_rating"].append(sampled_ratings)
+  return (
+      tf.data.Dataset.from_tensor_slices(train_tensor_slices),
+      tf.data.Dataset.from_tensor_slices(test_tensor_slices),
+  )

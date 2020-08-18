@@ -19,7 +19,7 @@ import array
 import collections
 import random
 
-from typing import Dict, Optional, Text
+from typing import Dict, List, Optional, Set, Text, Tuple
 
 import numpy as np
 import tensorflow as tf
@@ -96,11 +96,10 @@ def evaluate(user_model: tf.keras.Model,
 
 
 def _sample_list(
-    negative_movie_id_set,
-    feature_lists,
-    num_pos_examples_per_list,
-    num_neg_examples_per_list,
-):
+    negative_movie_id_set: Set,
+    feature_lists: Dict[Text, List[tf.Tensor]],
+    num_pos_examples_per_list: int,
+    num_neg_examples_per_list: int) -> Tuple[tf.Tensor]:
   """Function for sampling a list example from given feature lists."""
   sampled_indices = random.sample(
       range(len(feature_lists["movie_id"])),
@@ -126,19 +125,18 @@ def _sample_list(
   sampled_movie_ids = sampled_pos_movie_ids + sampled_neg_movie_ids
   sampled_ratings = sampled_pos_ratings + sampled_neg_ratings
   return (
-      tf.concat(sampled_movie_ids, axis=0),
-      tf.concat(sampled_ratings, axis=0),
+      tf.concat(sampled_movie_ids, 0),
+      tf.concat(sampled_ratings, 0),
   )
 
 
 def movielens_to_listwise(
-    rating_dataset,
-    movie_dataset,
-    train_num_list_per_user=10,
-    test_num_list_per_user=2,
-    num_pos_examples_per_list=10,
-    num_neg_examples_per_list=0,
-):
+    rating_dataset: tf.data.Dataset,
+    movie_dataset: tf.data.Dataset,
+    train_num_list_per_user: int = 10,
+    test_num_list_per_user: int = 2,
+    num_pos_examples_per_list: int = 10,
+    num_neg_examples_per_list: int = 0) -> Tuple[tf.data.Dataset]:
   """Function for converting the MovieLens 100K dataset to a listwise dataset.
 
   Args:

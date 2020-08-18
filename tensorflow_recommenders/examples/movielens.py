@@ -132,7 +132,6 @@ def _sample_list(
 
 def movielens_to_listwise(
     rating_dataset: tf.data.Dataset,
-    movie_dataset: tf.data.Dataset,
     train_num_list_per_user: int = 10,
     test_num_list_per_user: int = 2,
     num_pos_examples_per_list: int = 10,
@@ -142,8 +141,6 @@ def movielens_to_listwise(
   Args:
       rating_dataset:
         The MovieLens 100K ratings dataset loaded from TFDS.
-      movie_dataset:
-        The MovieLens 100K movies dataset loaded from TFDS.
       train_num_list_per_user:
         An integer representing the number of lists that should be sampled for
         each user in the training dataset.
@@ -175,6 +172,7 @@ def movielens_to_listwise(
       "movie_id": [],
       "user_rating": [],
   })
+  movie_id_vocab = set()
   for example in rating_dataset:
     user_id = example["user_id"].numpy()
     example_lists_by_user[user_id]["movie_id"].append(
@@ -183,9 +181,7 @@ def movielens_to_listwise(
     example_lists_by_user[user_id]["user_rating"].append(
         example["user_rating"],
     )
-  movie_id_vocab = set(
-      movie_dataset.map(lambda x: x["movie_id"]).as_numpy_iterator(),
-  )
+    movie_id_vocab.add(example["movie_id"].numpy())
 
   train_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
   test_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}

@@ -96,7 +96,7 @@ def evaluate(user_model: tf.keras.Model,
 
 
 def _sample_list(
-    negative_movie_id_set: Set,
+    negative_movie_id_set: Set[Text],
     feature_lists: Dict[Text, List[tf.Tensor]],
     num_pos_examples_per_list: int,
     num_neg_examples_per_list: int) -> Tuple[tf.Tensor]:

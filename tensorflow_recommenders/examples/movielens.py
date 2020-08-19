@@ -188,10 +188,10 @@ def movielens_to_listwise(
   train_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
   test_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
   for user_id, feature_lists in example_lists_by_user.items():
-    rated_movie_id_set = set([
+    rated_movie_id_set = {
         example.numpy()
         for example in feature_lists["movie_id"]
-    ])
+    }
     negative_movie_id_set = movie_id_vocab - rated_movie_id_set
     for _ in range(train_num_list_per_user):
       sampled_movie_ids, sampled_ratings = _sample_list(

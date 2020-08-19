@@ -1,16 +1,22 @@
 toc:
 - heading: "Beginner"
   style: divider
-- title: "Recommending movies: retrieval"
-  path: /recommenders/examples/basic_retrieval
-- title: "Recommending movies: ranking"
-  path: /recommenders/examples/basic_ranking
-- title: "Using side features: feature preprocessing"
-  path: /recommenders/examples/featurization
-- title: "Using deep models in retrieval"
-  path: /recommenders/examples/deep_recommenders
-- title: "Using context information"
-  path: /recommenders/examples/movielens_side_information
+- title: "Recommender basics"
+  style: accordion
+  section:
+  - title: "Recommending movies: retrieval"
+    path: /recommenders/examples/basic_retrieval
+  - title: "Recommending movies: ranking"
+    path: /recommenders/examples/basic_ranking
+- title: "Using rich features"
+  style: accordion
+  section:
+  - title: "Feature preprocessing"
+    path: /recommenders/examples/featurization
+  - title: "Leveraging context features"
+    path: /recommenders/examples/context_features
+  - title: "Building deep retrieval models"
+    path: /recommenders/examples/deep_recommenders
 - heading: "Intermediate"
   style: divider
 - title: "Multitask recommenders"

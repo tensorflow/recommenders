@@ -135,7 +135,8 @@ def movielens_to_listwise(
     train_num_list_per_user: int = 10,
     test_num_list_per_user: int = 2,
     num_pos_examples_per_list: int = 10,
-    num_neg_examples_per_list: int = 0) -> Tuple[tf.data.Dataset]:
+    num_neg_examples_per_list: int = 0,
+) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
   """Function for converting the MovieLens 100K dataset to a listwise dataset.
 
   Args:

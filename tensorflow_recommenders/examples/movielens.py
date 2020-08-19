@@ -174,7 +174,8 @@ def movielens_to_listwise(
       "movie_id": [],
       "user_rating": [],
   })
-  movie_id_vocab = set()
+  # We use a dictionary to maintain a deterministic ordering of movie ids.
+  movie_id_vocab = {}
   for example in rating_dataset:
     user_id = example["user_id"].numpy()
     example_lists_by_user[user_id]["movie_id"].append(
@@ -183,7 +184,7 @@ def movielens_to_listwise(
     example_lists_by_user[user_id]["user_rating"].append(
         example["user_rating"],
     )
-    movie_id_vocab.add(example["movie_id"].numpy())
+    movie_id_vocab[example["movie_id"].numpy()] = None
 
   train_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
   test_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
@@ -192,7 +193,10 @@ def movielens_to_listwise(
         example.numpy()
         for example in feature_lists["movie_id"]
     }
-    negative_movie_id_set = movie_id_vocab - rated_movie_id_set
+    negative_movie_id_set = {
+        movie_id: value for movie_id, value in movie_id_vocab.items()
+        if movie_id not in rated_movie_id_set
+    }.keys()
     for _ in range(train_num_list_per_user):
       sampled_movie_ids, sampled_ratings = _sample_list(
           negative_movie_id_set,

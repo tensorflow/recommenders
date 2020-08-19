@@ -140,7 +140,8 @@ def movielens_to_listwise(
 
   Args:
       rating_dataset:
-        The MovieLens 100K ratings dataset loaded from TFDS.
+        The MovieLens ratings dataset loaded from TFDS with features "movie_id",
+        "user_id", and "user_rating".
       train_num_list_per_user:
         An integer representing the number of lists that should be sampled for
         each user in the training dataset.

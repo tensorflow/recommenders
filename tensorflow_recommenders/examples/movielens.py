@@ -19,7 +19,7 @@ import array
 import collections
 import random
 
-from typing import Dict, List, Optional, Set, Text, Tuple
+from typing import Dict, List, Optional, Text, Tuple
 
 import numpy as np
 import tensorflow as tf
@@ -101,7 +101,7 @@ def _create_feature_dict() -> Dict[Text, List[tf.Tensor]]:
 
 
 def _sample_list(
-    negative_movie_id_set: Set[Text],
+    negative_movie_id_list: List[Text],
     feature_lists: Dict[Text, List[tf.Tensor]],
     num_pos_examples_per_list: int,
     num_neg_examples_per_list: int) -> Tuple[tf.Tensor]:
@@ -119,7 +119,7 @@ def _sample_list(
       for idx in sampled_indices
   ]
   sampled_neg_movie_ids = random.sample(
-      negative_movie_id_set,
+      negative_movie_id_list,
       num_neg_examples_per_list,
   )
   # Assign score 0 to movies that are not rated by the user, so they would
@@ -177,7 +177,7 @@ def movielens_to_listwise(
   """
   example_lists_by_user = collections.defaultdict(_create_feature_dict)
   # We use a dictionary to maintain a deterministic ordering of movie ids.
-  movie_id_vocab = {}
+  movie_id_vocab = set()
   for example in rating_dataset:
     user_id = example["user_id"].numpy()
     example_lists_by_user[user_id]["movie_id"].append(
@@ -186,7 +186,7 @@ def movielens_to_listwise(
     example_lists_by_user[user_id]["user_rating"].append(
         example["user_rating"],
     )
-    movie_id_vocab[example["movie_id"].numpy()] = None
+    movie_id_vocab.add(example["movie_id"].numpy())
 
   train_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
   test_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
@@ -195,13 +195,11 @@ def movielens_to_listwise(
         example.numpy()
         for example in feature_lists["movie_id"]
     }
-    negative_movie_id_set = {
-        movie_id: value for movie_id, value in movie_id_vocab.items()
-        if movie_id not in rated_movie_id_set
-    }.keys()
+    negative_movie_id_list = list(movie_id_vocab - rated_movie_id_set)
+    negative_movie_id_list.sort()
     for _ in range(train_num_list_per_user):
       sampled_movie_ids, sampled_ratings = _sample_list(
-          negative_movie_id_set,
+          negative_movie_id_list,
           feature_lists,
           num_pos_examples_per_list,
           num_neg_examples_per_list,
@@ -211,7 +209,7 @@ def movielens_to_listwise(
       train_tensor_slices["user_rating"].append(sampled_ratings)
     for _ in range(test_num_list_per_user):
       sampled_movie_ids, sampled_ratings = _sample_list(
-          negative_movie_id_set,
+          negative_movie_id_list,
           feature_lists,
           num_pos_examples_per_list,
           num_neg_examples_per_list,

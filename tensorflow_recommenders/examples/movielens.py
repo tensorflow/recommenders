@@ -104,11 +104,15 @@ def _sample_list(
     negative_movie_id_list: List[Text],
     feature_lists: Dict[Text, List[tf.Tensor]],
     num_pos_examples_per_list: int,
-    num_neg_examples_per_list: int) -> Tuple[tf.Tensor]:
+    num_neg_examples_per_list: int,
+    random_state: Optional[np.random.RandomState] = None) -> Tuple[tf.Tensor]:
   """Function for sampling a list example from given feature lists."""
-  sampled_indices = random.sample(
+  if random_state is None:
+    random_state = np.random.RandomState()
+  sampled_indices = random_state.choice(
       range(len(feature_lists["movie_id"])),
-      num_pos_examples_per_list,
+      size=num_pos_examples_per_list,
+      replace=False,
   )
   sampled_pos_movie_ids = [
       feature_lists["movie_id"][idx]
@@ -118,16 +122,17 @@ def _sample_list(
       feature_lists["user_rating"][idx]
       for idx in sampled_indices
   ]
-  sampled_neg_movie_ids = random.sample(
+  sampled_neg_movie_ids = random_state.choice(
       negative_movie_id_list,
-      num_neg_examples_per_list,
+      size=num_neg_examples_per_list,
+      replace=False,
   )
   # Assign score 0 to movies that are not rated by the user, so they would
   # be placed at the bottom of the ranking.
   sampled_neg_ratings = [
       0. for _ in range(num_neg_examples_per_list)
   ]
-  sampled_movie_ids = sampled_pos_movie_ids + sampled_neg_movie_ids
+  sampled_movie_ids = sampled_pos_movie_ids + sampled_neg_movie_ids.tolist()
   sampled_ratings = sampled_pos_ratings + sampled_neg_ratings
   return (
       tf.concat(sampled_movie_ids, 0),
@@ -141,6 +146,7 @@ def movielens_to_listwise(
     test_num_list_per_user: int = 2,
     num_pos_examples_per_list: int = 10,
     num_neg_examples_per_list: int = 0,
+    seed: Optional[int] = None,
 ) -> Tuple[tf.data.Dataset, tf.data.Dataset]:
   """Function for converting the MovieLens 100K dataset to a listwise dataset.
 
@@ -160,6 +166,8 @@ def movielens_to_listwise(
       num_neg_examples_per_list:
         An integer representing the number of movies in each list to be sampled
         from movies that are not rated by the user.
+      seedL
+        An integer for creating `np.random.RandomState`.
 
   Returns:
       A tuple of tensorflow datasets, each containing list examples. The first
@@ -191,6 +199,7 @@ def movielens_to_listwise(
   train_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
   test_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
   for user_id, feature_lists in example_lists_by_user.items():
+    random_state = np.random.RandomState(seed) if seed is not None else None
     rated_movie_id_set = {
         example.numpy()
         for example in feature_lists["movie_id"]
@@ -203,6 +212,7 @@ def movielens_to_listwise(
           feature_lists,
           num_pos_examples_per_list,
           num_neg_examples_per_list,
+          random_state=random_state,
       )
       train_tensor_slices["user_id"].append(user_id)
       train_tensor_slices["movie_id"].append(sampled_movie_ids)
@@ -213,6 +223,7 @@ def movielens_to_listwise(
           feature_lists,
           num_pos_examples_per_list,
           num_neg_examples_per_list,
+          random_state=random_state,
       )
       test_tensor_slices["user_id"].append(user_id)
       test_tensor_slices["movie_id"].append(sampled_movie_ids)

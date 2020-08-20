@@ -95,6 +95,11 @@ def evaluate(user_model: tf.keras.Model,
   }
 
 
+def _create_feature_dict() -> Dict[Text, List[tf.Tensor]]:
+  """Helper function for creating an empty feature dict for defaultdict."""
+  return {"movie_id": [], "user_rating": []}
+
+
 def _sample_list(
     negative_movie_id_set: Set[Text],
     feature_lists: Dict[Text, List[tf.Tensor]],
@@ -170,10 +175,7 @@ def movielens_to_listwise(
       rating of each movie in the candidate list. Movies that were not rated by
       the user in an example would receive a rating of 0.
   """
-  example_lists_by_user = collections.defaultdict(lambda: {
-      "movie_id": [],
-      "user_rating": [],
-  })
+  example_lists_by_user = collections.defaultdict(_create_feature_dict)
   # We use a dictionary to maintain a deterministic ordering of movie ids.
   movie_id_vocab = {}
   for example in rating_dataset:

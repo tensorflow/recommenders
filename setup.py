@@ -20,7 +20,6 @@ import setuptools
 VERSION = "0.1.0"
 
 REQUIRED_PACKAGES = [
-    "tf-nightly",
     "absl-py >= 0.1.6",
 ]
 

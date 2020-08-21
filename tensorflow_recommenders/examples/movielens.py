@@ -17,7 +17,6 @@
 
 import array
 import collections
-import random
 
 from typing import Dict, List, Optional, Text, Tuple
 
@@ -166,7 +165,7 @@ def movielens_to_listwise(
       num_neg_examples_per_list:
         An integer representing the number of movies in each list to be sampled
         from movies that are not rated by the user.
-      seedL
+      seed:
         An integer for creating `np.random.RandomState`.
 
   Returns:
@@ -205,7 +204,7 @@ def movielens_to_listwise(
         for example in feature_lists["movie_id"]
     }
     negative_movie_id_list = sorted(movie_id_vocab - rated_movie_id_set)
-    
+
     for _ in range(train_num_list_per_user):
       sampled_movie_ids, sampled_ratings = _sample_list(
           negative_movie_id_list,

@@ -21,3 +21,5 @@ toc:
   style: divider
 - title: "Multitask recommenders"
   path: /recommenders/examples/multitask
+- title: "List Optimization"
+  path: /recommenders/examples/list_optimization

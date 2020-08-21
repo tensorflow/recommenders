@@ -205,6 +205,7 @@ def movielens_to_listwise(
         for example in feature_lists["movie_id"]
     }
     negative_movie_id_list = sorted(movie_id_vocab - rated_movie_id_set)
+    
     for _ in range(train_num_list_per_user):
       sampled_movie_ids, sampled_ratings = _sample_list(
           negative_movie_id_list,

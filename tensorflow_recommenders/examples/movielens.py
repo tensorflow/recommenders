@@ -183,6 +183,7 @@ def movielens_to_listwise(
       rating of each movie in the candidate list. Movies that were not rated by
       the user in an example would receive a rating of 0.
   """
+  random_state = np.random.RandomState(seed) if seed is not None else None
   example_lists_by_user = collections.defaultdict(_create_feature_dict)
   # We use a dictionary to maintain a deterministic ordering of movie ids.
   movie_id_vocab = set()
@@ -199,13 +200,11 @@ def movielens_to_listwise(
   train_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
   test_tensor_slices = {"user_id": [], "movie_id": [], "user_rating": []}
   for user_id, feature_lists in example_lists_by_user.items():
-    random_state = np.random.RandomState(seed) if seed is not None else None
     rated_movie_id_set = {
         example.numpy()
         for example in feature_lists["movie_id"]
     }
-    negative_movie_id_list = list(movie_id_vocab - rated_movie_id_set)
-    negative_movie_id_list.sort()
+    negative_movie_id_list = sorted(movie_id_vocab - rated_movie_id_set)
     for _ in range(train_num_list_per_user):
       sampled_movie_ids, sampled_ratings = _sample_list(
           negative_movie_id_list,
@@ -217,6 +216,7 @@ def movielens_to_listwise(
       train_tensor_slices["user_id"].append(user_id)
       train_tensor_slices["movie_id"].append(sampled_movie_ids)
       train_tensor_slices["user_rating"].append(sampled_ratings)
+
     for _ in range(test_num_list_per_user):
       sampled_movie_ids, sampled_ratings = _sample_list(
           negative_movie_id_list,

@@ -104,7 +104,8 @@ def _sample_list(
     feature_lists: Dict[Text, List[tf.Tensor]],
     num_pos_examples_per_list: int,
     num_neg_examples_per_list: int,
-    random_state: Optional[np.random.RandomState] = None) -> Tuple[tf.Tensor]:
+    random_state: Optional[np.random.RandomState] = None,
+) -> Tuple[tf.Tensor, tf.Tensor]:
   """Function for sampling a list example from given feature lists."""
   if random_state is None:
     random_state = np.random.RandomState()

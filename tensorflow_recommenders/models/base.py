@@ -35,10 +35,13 @@ class Model(tf.keras.Model):
     is not always necessary: for example, two-tower retrieval models have two
     well-defined submodels whose `call` methods are normally used directly.
 
-  When building more complex models that require further flexbility (such
-  as the ability to use different optimizers for different variables, or
-  manipulating the gradients), please override the `train_step` and
-  `test_step` methods directly. Keras has an excellent tutorial on how to
+  Note that his base class is a thin conveniece wrapper for tf.keras.Model, and
+  equivalent functionality can easily be achieved by overriding the `train_step`
+  and `test_step` methods of a plain Keras model. Doing so also makes it easy
+  to build even more complex training mechanisms, such as the use of
+  different optimizers for different variables, or manipulating gradients.
+
+  Keras has an excellent tutorial on how to
   do this [here](https://keras.io/guides/customizing_what_happens_in_fit/).
   """
 
@@ -60,10 +63,6 @@ class Model(tf.keras.Model):
   def train_step(self, inputs):
     """Custom train step using the `compute_loss` method."""
 
-    if isinstance(inputs, tuple) and len(inputs) == 1:
-      # Keras has added a (features, labels) tuple; let's unpack it.
-      inputs = inputs[0]
-
     with tf.GradientTape() as tape:
       loss = self.compute_loss(inputs, training=True)
 
@@ -84,10 +83,6 @@ class Model(tf.keras.Model):
 
   def test_step(self, inputs):
     """Custom test step using the `compute_loss` method."""
-
-    if isinstance(inputs, tuple) and len(inputs) == 1:
-      # Keras has added a (features, labels) tuple; let's unpack it.
-      inputs = inputs[0]
 
     loss = self.compute_loss(inputs, training=False)
 

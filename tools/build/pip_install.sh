@@ -1,5 +1,6 @@
 #!/bin/bash
 
+set -x
 set -e   # fail and exit on any command erroring
 
 # Need to set these env vars
@@ -11,7 +12,7 @@ source ./tools/build/utils.sh
 
 # Set up a virtualenv.
 echo "Creating virtualenv..."
-create_virtualenv "tfrs_$TF_VERSION_$PY_VERSION" "$PY_VERSION"
+create_virtualenv "tfrs_$TF_VERSION_$PY_VERSION" "python$PY_VERSION"
 
 # Install TensorFlow.
 echo "Installing TensorFlow..."

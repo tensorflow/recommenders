@@ -19,6 +19,12 @@ Install from `pip`:
 pip install tensorflow-recommenders
 ```
 
+## Documentation
+
+Have a look at our
+[tutorials](https://tensorflow.org/recommenders/examples/quickstart) and
+[API reference](https://tensorflow.org/recommenders/api_docs/tfrs).
+
 ## Quick start
 
 Building a factorization model for the Movielens 100K dataset is very simple
@@ -84,10 +90,3 @@ model.fit(train.batch(4096), epochs=5)
 # Evaluate.
 model.evaluate(test.batch(4096), return_dict=True)
 ```
-
-## Tutorials
-
--   [Quickstart](https://tensorflow.org/recommenders/examples/quickstart)
--   [Building a basic Movielens retrieval model](https://tensorflow.org/recommenders/examples/basic_retrieval)
--   [Using context information](https://tensorflow.org/recommenders/examples/movielens_side_information)
--   [Multi-objective recommendations](https://tensorflow.org/recommenders/examples/multitask)

@@ -35,7 +35,7 @@ class Model(tf.keras.Model):
     is not always necessary: for example, two-tower retrieval models have two
     well-defined submodels whose `call` methods are normally used directly.
 
-  Note that his base class is a thin conveniece wrapper for tf.keras.Model, and
+  Note that this base class is a thin conveniece wrapper for tf.keras.Model, and
   equivalent functionality can easily be achieved by overriding the `train_step`
   and `test_step` methods of a plain Keras model. Doing so also makes it easy
   to build even more complex training mechanisms, such as the use of

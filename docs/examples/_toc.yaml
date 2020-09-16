@@ -21,5 +21,3 @@ toc:
   style: divider
 - title: "Multitask recommenders"
   path: /recommenders/examples/multitask
-- title: "Learning to rank"
-  path: /recommenders/examples/listwise_ranking

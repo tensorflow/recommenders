@@ -35,6 +35,9 @@ echo "Building source distribution..."
 python setup.py sdist $SETUP_ARGS
 python setup.py bdist_wheel $SETUP_ARGS
 
+# Check setup.py.
+twine check dist/*
+
 # Install and test the distribution
 echo "Running tests..."
 pip install dist/*.whl
@@ -47,11 +50,10 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
   echo "Publishing to PyPI.."
-  # Commented out for now; switched to test PyPI.
-  # twine upload dist/* --repository testpypi
+  # Switched to test PyPI.
+  twine upload --repository testpypi dist/*
 else
   echo "Skipping upload."
-  exit 1
 fi
 
 echo "Done."

@@ -24,7 +24,7 @@ REQUIRED_PACKAGES = [
 ]
 
 setuptools.setup(
-    name="tensorflow_recommenders",
+    name="tensorflow-recommenders",
     version=VERSION,
     description="Tensorflow Recommenders, a TensorFlow library for recommender systems.",
     url="https://github.com/tensorflow/recommenders",

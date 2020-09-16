@@ -13,7 +13,7 @@ you the flexibility to build complex models.
 
 ## Installation
 
-Install from `pip`:
+Make sure you have TensorFlow 2.x installed, and install from `pip`:
 
 ```shell
 pip install tensorflow-recommenders
@@ -28,7 +28,7 @@ Have a look at our
 ## Quick start
 
 Building a factorization model for the Movielens 100K dataset is very simple
-([Colab](tensorflow_recommenders/examples/quickstart.ipynb)):
+([Colab](https://tensorflow.org/recommenders/examples/quickstart)):
 
 ```python
 import tensorflow_datasets as tfds

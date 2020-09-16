@@ -47,8 +47,8 @@ echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
   echo "Publishing to PyPI.."
-  # Commented out for now.
-  # twine upload dist/*
+  # Commented out for now; switched to test PyPI.
+  # twine upload dist/* --repository testpypi
 else
   echo "Skipping upload."
   exit 1

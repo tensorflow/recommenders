@@ -20,6 +20,8 @@ upper_tabs:
     - name: API
       skip_translation: true
       contents:
-      - include: /recommenders/api_docs/_toc.yaml
+      - title: All Symbols
+        path: /recommenders/api_docs/python/tfrs/all_symbols
+      - include: /recommenders/api_docs/python/tfrs/_toc.yaml
 
 - include: /_upper_tabs_right.yaml

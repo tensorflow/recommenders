@@ -17,7 +17,7 @@
 import setuptools
 
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 REQUIRED_PACKAGES = [
     "absl-py >= 0.1.6",

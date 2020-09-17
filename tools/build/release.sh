@@ -27,7 +27,7 @@ pip install -q --upgrade setuptools pip
 pip install -q wheel twine pyopenssl
 
 echo "Checking out commit $GIT_COMMIT_ID..."
-# git checkout $GIT_COMMIT_ID
+git checkout $GIT_COMMIT_ID
 
 echo "Building source distribution..."
 

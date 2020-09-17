@@ -32,7 +32,7 @@ landing_page:
         <a href="https://github.com/tensorflow/recommenders">on Github</a>.
         <br>
         <br>
-        To learn more, see the <a href="./examples/movielens">tutorial on 
+        To learn more, see the <a href="./examples/movielens">tutorial on
         how to build a movie recommender system</a>, or check the
         <a href="./api/tfrs"> API docs</a> for the API reference.
 

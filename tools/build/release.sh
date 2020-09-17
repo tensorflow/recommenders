@@ -49,9 +49,8 @@ read -p "Publish? (y/n) " -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
-  echo "Publishing to PyPI.."
-  # Switched to test PyPI.
-  twine upload --repository testpypi dist/*
+  echo "Publishing to PyPI."
+  twine upload dist/*
 else
   echo "Skipping upload."
 fi

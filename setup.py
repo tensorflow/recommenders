@@ -17,7 +17,7 @@
 import pathlib
 import setuptools
 
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 REQUIRED_PACKAGES = [
     "absl-py >= 0.1.6",

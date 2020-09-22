@@ -23,7 +23,7 @@ landing_page:
         TFRS makes it possible to:
         <ul style="padding-left: 20px; margin: 20px 0;">
           <li>Build and evaluate flexible recommendation retrieval models.</li>
-          <li>Freely incorporate item, user, and <a href="./examples/movielens_side_information">
+          <li>Freely incorporate item, user, and <a href="./examples/featurization">
           context information</a> into recommendation models.</li>
           <li>Train <a href="./examples/multitask/">multi-task models</a>
           that jointly optimize multiple recommendation objectives.</li>
@@ -32,7 +32,7 @@ landing_page:
         <a href="https://github.com/tensorflow/recommenders">on Github</a>.
         <br>
         <br>
-        To learn more, see the <a href="./examples/movielens">tutorial on
+        To learn more, see the <a href="./examples/basic_retrieval">tutorial on
         how to build a movie recommender system</a>, or check the
         <a href="./api/tfrs"> API docs</a> for the API reference.
 

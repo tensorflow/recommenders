@@ -23,7 +23,7 @@ pip install tensorflow-recommenders
 
 Have a look at our
 [tutorials](https://tensorflow.org/recommenders/examples/quickstart) and
-[API reference](https://tensorflow.org/recommenders/api_docs/tfrs).
+[API reference](https://www.tensorflow.org/recommenders/api_docs/python/tfrs/).
 
 ## Quick start
 

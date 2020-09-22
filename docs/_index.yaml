@@ -71,5 +71,5 @@ landing_page:
         print(f"Recommendations for user 42: {titles[0, :3]}")
         </pre>
         {% dynamic if request.tld != 'cn' %}
-        <a class="colab-button" target="_blank" href="https://colab.research.google.com/github/tensorflow/recommenders/blob/main/docs/quickstart.ipynb">Run in a <span>Notebook</span></a>
+        <a class="colab-button" target="_blank" href="https://colab.research.google.com/github/tensorflow/recommenders/blob/main/docs/examples/quickstart.ipynb">Run in a <span>Notebook</span></a>
         {% dynamic endif %}

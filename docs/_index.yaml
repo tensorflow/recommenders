@@ -34,7 +34,7 @@ landing_page:
         <br>
         To learn more, see the <a href="./examples/basic_retrieval">tutorial on
         how to build a movie recommender system</a>, or check the
-        <a href="./api/tfrs"> API docs</a> for the API reference.
+        <a href="./api_docs/python"> API docs</a> for the API reference.
 
       code_block: |
         <pre class = "prettyprint">

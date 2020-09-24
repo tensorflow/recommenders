@@ -23,7 +23,7 @@ class Model(tf.keras.Model):
 
   Many recommender models are relatively complex, and do not neatly fit into
   supervised or unsupervised paradigms. This base class makes it easy to
-  define custom traininig and test losses for such complex models.
+  define custom training and test losses for such complex models.
 
   This is done by asking the user to implement the following methods:
   - `__init__` to set up your model. Variable, task, loss, and metric

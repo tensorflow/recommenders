@@ -31,8 +31,10 @@ Building a factorization model for the Movielens 100K dataset is very simple
 ([Colab](https://tensorflow.org/recommenders/examples/quickstart)):
 
 ```python
+import tensorflow as tf
 import tensorflow_datasets as tfds
 import tensorflow_recommenders as tfrs
+from typing import Dict, Text
 
 # Ratings data.
 ratings = tfds.load('movie_lens/100k-ratings', split="train")

@@ -6,8 +6,6 @@ package(
 
 licenses(["notice"])
 
-exports_files(["LICENSE"])
-
 py_binary(
     name = "build_api_docs",
     srcs = ["build_api_docs.py"],

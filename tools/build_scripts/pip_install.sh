@@ -8,7 +8,7 @@ set -e   # fail and exit on any command erroring
 : "${PY_VERSION:?}"
 
 # Import build functions.
-source ./tools/build/utils.sh
+source ./tools/build_scripts/utils.sh
 
 # Set up a virtualenv.
 echo "Creating virtualenv..."

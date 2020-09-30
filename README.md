@@ -1,6 +1,9 @@
 # TensorFlow Recommenders
 
-![TensorFlow Recommenders](https://github.com/tensorflow/recommenders/workflows/TensorFlow%20Recommenders/badge.svg)
+![TensorFlow Recommenders logo](assets/full_logo.png)
+
+![TensorFlow Recommenders build badge](https://github.com/tensorflow/recommenders/workflows/TensorFlow%20Recommenders/badge.svg)
+[![PyPI badge](https://img.shields.io/pypi/v/tensorflow-recommenders.svg)](https://pypi.python.org/pypi/tensorflow-recommenders/)
 
 TensorFlow Recommenders is a library for building recommender system models
 using [TensorFlow](https://www.tensorflow.org).

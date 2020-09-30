@@ -107,11 +107,11 @@ class BruteForce(ANN, tf.keras.Model):
         given instead.
     """
 
-    if identifiers is None:
-      identifiers = tf.range(candidates.shape[0])
-
     if isinstance(candidates, tf.data.Dataset):
       candidates = tf.concat(list(candidates), axis=0)  # pytype: disable=wrong-arg-types
+
+    if identifiers is None:
+      identifiers = tf.range(candidates.shape[0])
 
     if isinstance(identifiers, tf.data.Dataset):
       identifiers = tf.concat(list(identifiers), axis=0)  # pytype: disable=wrong-arg-types
@@ -120,11 +120,15 @@ class BruteForce(ANN, tf.keras.Model):
       raise ValueError(
           f"The candidates tensor must be 2D (got {candidates.shape}).")
 
+    # We need any value that has the correct dtype.
+    identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)
+
     self._identifiers = self.add_weight(
         name="identifiers",
         dtype=identifiers.dtype,
         shape=identifiers.shape,
-        initializer=tf.keras.initializers.Constant(value=""),
+        initializer=tf.keras.initializers.Constant(
+            value=identifiers_initial_value),
         trainable=False)
     self._candidates = self.add_weight(
         name="candidates",

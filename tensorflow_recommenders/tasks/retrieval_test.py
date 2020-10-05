@@ -48,7 +48,6 @@ class RetrievalTest(tf.test.TestCase):
     expected_loss = -np.log(_sigmoid(3.0)) - np.log(1 - _sigmoid(4.0))
     expected_metrics = {
         "corpus_categorical_accuracy_at_5": 1.0,
-        "factorized_top_k": [1.0]
     }
 
     loss = task(query_embeddings=query, candidate_embeddings=candidate)
@@ -59,6 +58,38 @@ class RetrievalTest(tf.test.TestCase):
     self.assertIsNotNone(loss)
     self.assertAllClose(expected_loss, loss)
     self.assertAllClose(expected_metrics, metrics_)
+
+  def test_task_graph(self):
+
+    with tf.Graph().as_default():
+      with tf.compat.v1.Session() as sess:
+        query = tf.constant([[1, 2, 3], [2, 3, 4]], dtype=tf.float32)
+        candidate = tf.constant([[1, 1, 1], [1, 1, 0]], dtype=tf.float32)
+        candidate_dataset = tf.data.Dataset.from_tensor_slices(
+            np.array([[0, 0, 0]] * 20, dtype=np.float32))
+
+        task = retrieval.Retrieval(
+            metrics=metrics.FactorizedTopK(
+                candidates=candidate_dataset.batch(16),
+                metrics=[
+                    tf.keras.metrics.TopKCategoricalAccuracy(
+                        k=5, name="corpus_categorical_accuracy_at_5")
+                ]))
+
+        expected_metrics = {
+            "corpus_categorical_accuracy_at_5": 1.0,
+        }
+
+        loss = task(query_embeddings=query, candidate_embeddings=candidate)
+
+        sess.run([var.initializer for var in task.variables])
+        sess.run(loss)
+
+        metrics_ = {
+            metric.name: sess.run(metric.result()) for metric in task.metrics
+        }
+
+        self.assertAllClose(expected_metrics, metrics_)
 
 
 if __name__ == "__main__":

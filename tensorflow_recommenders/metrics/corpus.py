@@ -22,7 +22,7 @@ import tensorflow as tf
 from tensorflow_recommenders import layers
 
 
-class FactorizedTopK(tf.keras.metrics.Metric):
+class FactorizedTopK(tf.keras.layers.Layer):
   """Computes top-K metrics for a factorized retrieval model.
 
   The metrics are computed across a corpus of candidates in a streaming manner,
@@ -66,13 +66,16 @@ class FactorizedTopK(tf.keras.metrics.Metric):
     self._top_k_metrics = metrics
 
   def update_state(self, query_embeddings: tf.Tensor,
-                   true_candidate_embeddings: tf.Tensor) -> None:
+                   true_candidate_embeddings: tf.Tensor) -> tf.Operation:
     """Updates the metrics.
 
     Args:
       query_embeddings: [num_queries, embedding_dim] tensor of query embeddings.
       true_candidate_embeddings: [num_queries, embedding_dim] tensor of
         embeddings for candidates that were selected for the query.
+
+    Returns:
+      Update op. Only used in graph mode.
     """
 
     positive_scores = tf.reduce_sum(
@@ -88,8 +91,12 @@ class FactorizedTopK(tf.keras.metrics.Metric):
         axis=1)
     y_pred = tf.concat([positive_scores, top_k_predictions], axis=1)
 
+    update_ops = []
+
     for metric in self._top_k_metrics:
-      metric.update_state(y_true=y_true, y_pred=y_pred)
+      update_ops.append(metric.update_state(y_true=y_true, y_pred=y_pred))
+
+    return tf.group(update_ops)
 
   def reset_states(self) -> None:
     """Resets the metrics."""

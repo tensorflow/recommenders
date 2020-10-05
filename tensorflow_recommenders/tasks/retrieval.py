@@ -135,12 +135,14 @@ class Retrieval(tf.keras.layers.Layer):
 
     loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)
 
-    if not self._metrics:
+    if not self._corpus_metrics:
       return loss
 
     if not evaluate_metrics:
       return loss
 
-    self._corpus_metrics.update_state(query_embeddings, candidate_embeddings)
+    update_op = self._corpus_metrics.update_state(
+        query_embeddings, candidate_embeddings)
 
-    return loss
+    with tf.control_dependencies([update_op]):
+      return tf.identity(loss)

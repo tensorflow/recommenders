@@ -73,8 +73,11 @@ class Ranking(tf.keras.layers.Layer):
     loss = self._loss(
         y_true=labels, y_pred=predictions, sample_weight=sample_weight)
 
-    for metric in self.metrics:
-      metric.update_state(
-          y_true=labels, y_pred=predictions, sample_weight=sample_weight)
+    update_ops = []
 
-    return loss
+    for metric in self.metrics:
+      update_ops.append(metric.update_state(
+          y_true=labels, y_pred=predictions, sample_weight=sample_weight))
+
+    with tf.control_dependencies(update_ops):
+      return tf.identity(loss)

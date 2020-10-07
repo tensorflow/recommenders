@@ -20,7 +20,10 @@ from typing import List, Optional, Text
 import tensorflow as tf
 
 
-class Ranking(tf.keras.layers.Layer):
+from tensorflow_recommenders.tasks import base
+
+
+class Ranking(tf.keras.layers.Layer, base.Task):
   """A ranking task.
 
   Recommender systems are often composed of two components:
@@ -38,12 +41,17 @@ class Ranking(tf.keras.layers.Layer):
       self,
       loss: Optional[tf.keras.losses.Loss] = None,
       metrics: Optional[List[tf.keras.metrics.Metric]] = None,
+      prediction_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
+      label_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
       name: Optional[Text] = None) -> None:
     """Initializes the task.
 
     Args:
       loss: Loss function. Defaults to BinaryCrossentropy.
       metrics: List of Keras metrics to be evaluated.
+      prediction_metrics: List of Keras metrics used to summarize the
+        predictions.
+      label_metrics: List of Keras metrics used to summarize the labels.
       name: Optional task name.
     """
 
@@ -52,6 +60,8 @@ class Ranking(tf.keras.layers.Layer):
     self._loss = (
         loss if loss is not None else tf.keras.losses.BinaryCrossentropy())
     self._ranking_metrics = metrics or []
+    self._prediction_metrics = prediction_metrics or []
+    self._label_metrics = label_metrics or []
 
   def call(self,
            labels: tf.Tensor,
@@ -75,9 +85,15 @@ class Ranking(tf.keras.layers.Layer):
 
     update_ops = []
 
-    for metric in self.metrics:
+    for metric in self._ranking_metrics:
       update_ops.append(metric.update_state(
           y_true=labels, y_pred=predictions, sample_weight=sample_weight))
+
+    for metric in self._prediction_metrics:
+      update_ops.append(metric.update_state(predictions))
+
+    for metric in self._label_metrics:
+      update_ops.append(metric.update_state(labels))
 
     with tf.control_dependencies(update_ops):
       return tf.identity(loss)

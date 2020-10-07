@@ -21,9 +21,10 @@ import tensorflow as tf
 
 from tensorflow_recommenders import layers
 from tensorflow_recommenders.metrics.corpus import FactorizedTopK
+from tensorflow_recommenders.tasks import base
 
 
-class Retrieval(tf.keras.layers.Layer):
+class Retrieval(tf.keras.layers.Layer, base.Task):
   """A factorized retrieval task.
 
   Recommender systems are often composed of two components:

@@ -12,8 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Task libraries."""
+# Lint-as: python3
+"""Base task class."""
 
-from tensorflow_recommenders.tasks.base import Task
-from tensorflow_recommenders.tasks.ranking import Ranking
-from tensorflow_recommenders.tasks.retrieval import Retrieval
+
+class Task:
+  """Task class.
+
+  This is a marker class: inherit from this class if you'd like to make
+  your tasks distinguishable from plain Keras layers.
+  """
+
+  pass

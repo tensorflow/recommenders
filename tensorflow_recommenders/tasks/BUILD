@@ -10,10 +10,18 @@ package(
 licenses(["notice"])
 
 py_library(
+    name = "base",
+    srcs = ["base.py"],
+    srcs_version = "PY3",
+    deps = [],
+)
+
+py_library(
     name = "ranking",
     srcs = ["ranking.py"],
     srcs_version = "PY3",
     deps = [
+        ":base",
         # py/tensorflow dep,
     ],
 )
@@ -23,6 +31,7 @@ py_library(
     srcs = ["retrieval.py"],
     srcs_version = "PY3",
     deps = [
+        ":base",
         # py/tensorflow dep,
         "//tensorflow_recommenders/layers",
         "//tensorflow_recommenders/metrics:corpus",
@@ -34,6 +43,7 @@ py_library(
     srcs = ["__init__.py"],
     srcs_version = "PY3",
     deps = [
+        ":base",
         ":ranking",
         ":retrieval",
     ],

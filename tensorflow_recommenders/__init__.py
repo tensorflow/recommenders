@@ -24,6 +24,7 @@ you the flexibility to build complex models.
 __version__ = "v0.1.3"
 
 from tensorflow_recommenders import examples
+# Internal extension library import.
 from tensorflow_recommenders import layers
 from tensorflow_recommenders import metrics
 from tensorflow_recommenders import models

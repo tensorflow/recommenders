@@ -13,6 +13,7 @@ py_library(
     srcs_version = "PY3",
     deps = [
         "//tensorflow_recommenders/examples",
+        # Placeholder for internal extension library.
         "//tensorflow_recommenders/layers",
         "//tensorflow_recommenders/metrics",
         "//tensorflow_recommenders/models",

@@ -78,7 +78,9 @@ class DatasetTopK(tf.keras.layers.Layer):
   def __init__(self,
                candidates: tf.data.Dataset,
                k: int = 10,
-               handle_incomplete_batches: bool = True) -> None:
+               handle_incomplete_batches: bool = True,
+               num_parallel_calls: int = tf.data.experimental.AUTOTUNE,
+               sorted_order: bool = True) -> None:
     """Initializes the layer.
 
     Args:
@@ -89,12 +91,18 @@ class DatasetTopK(tf.keras.layers.Layer):
         will be correctly handled at the price of some performance. As an
         alternative, consider using the drop_remainer option when batching
         the candidate dataset.
+      num_parallel_calls: Degree of parallelism when computing scores. Defaults
+        to autotuning.
+      sorted_order: If the resulting scores should be returned in sorted order.
+        setting this to False may result in a small increase in performance.
     """
 
     super(DatasetTopK, self).__init__()
     self._candidates = candidates
     self._k = k
     self._handle_incomplete_batches = handle_incomplete_batches
+    self._num_parallel_calls = num_parallel_calls
+    self._sorted = sorted_order
 
   def call(self, query_embeddings: tf.Tensor) -> tf.Tensor:
     """Computes K highest scores for a given user representation.
@@ -117,7 +125,7 @@ class DatasetTopK(tf.keras.layers.Layer):
       if self._handle_incomplete_batches:
         scores = _pad_scores_to_k(scores, self._k)
 
-      scores, _ = tf.math.top_k(scores, k=self._k)
+      scores, _ = tf.math.top_k(scores, k=self._k, sorted=self._sorted)
 
       return scores
 
@@ -135,7 +143,7 @@ class DatasetTopK(tf.keras.layers.Layer):
         [query_batch_size, k] tensor of highest scores from state and x.
       """
       joined_scores = tf.concat([state_scores, x_scores], axis=1)
-      scores, _ = tf.math.top_k(joined_scores, k=self._k)
+      scores, _ = tf.math.top_k(joined_scores, k=self._k, sorted=self._sorted)
 
       return scores
 
@@ -158,11 +166,10 @@ class DatasetTopK(tf.keras.layers.Layer):
           # Each element is a ([query_batch_size, k] tensor,
           # [query_batch_size, k] tensor) of scores and indices (where query_
           # batch_size is the leading dimension of the input query embeddings).
-          .map(top_scores)
+          .map(top_scores, num_parallel_calls=self._num_parallel_calls)
           # Reduce into a single tuple of output tensors by keeping a running
           # tally of top k scores.
-          .reduce(initial_state, top_k)
-      )
+          .reduce(initial_state, top_k))
 
     return remove_sentinel_values(top_scores)
 
@@ -179,7 +186,9 @@ class DatasetIndexedTopK(tf.keras.layers.Layer):
   def __init__(self,
                candidates: tf.data.Dataset,
                k: int = 10,
-               handle_incomplete_batches: bool = True) -> None:
+               handle_incomplete_batches: bool = True,
+               num_parallel_calls: int = tf.data.experimental.AUTOTUNE,
+               sorted_order: bool = True) -> None:
     """Initializes the layer.
 
     Args:
@@ -192,8 +201,12 @@ class DatasetIndexedTopK(tf.keras.layers.Layer):
       k: Number of top scores to retrieve.
       handle_incomplete_batches: When True, candidate batches smaller than k
         will be correctly handled at the price of some performance. As an
-        alternative, consider using the drop_remainer option when batching
-        the candidate dataset.
+        alternative, consider using the drop_remainer option when batching the
+        candidate dataset.
+      num_parallel_calls: Degree of parallelism when computing scores. Defaults
+        to autotuning.
+      sorted_order: If the resulting scores should be returned in sorted order.
+        setting this to False may result in a small increase in performance.
 
     Raises:
       ValueError if candidate elements are not tuples.
@@ -210,6 +223,8 @@ class DatasetIndexedTopK(tf.keras.layers.Layer):
     self._candidates = candidates
     self._k = k
     self._handle_incomplete_batches = handle_incomplete_batches
+    self._num_parallel_calls = num_parallel_calls
+    self._sorted = sorted_order
 
   def call(self, query_embeddings: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes K highest scores and candidate indices for a given query.
@@ -235,7 +250,7 @@ class DatasetIndexedTopK(tf.keras.layers.Layer):
         scores = _pad_scores_to_k(scores, self._k)
         candidate_index = _pad_indices_to_k(candidate_index, self._k)
 
-      scores, indices = tf.math.top_k(scores, k=self._k)
+      scores, indices = tf.math.top_k(scores, k=self._k, sorted=self._sorted)
 
       return scores, tf.gather(candidate_index, indices)
 
@@ -263,7 +278,8 @@ class DatasetIndexedTopK(tf.keras.layers.Layer):
       joined_scores = tf.concat([state_scores, x_scores], axis=1)
       joined_indices = tf.concat([state_indices, x_indices], axis=1)
 
-      scores, indices = tf.math.top_k(joined_scores, k=self._k)
+      scores, indices = tf.math.top_k(
+          joined_scores, k=self._k, sorted=self._sorted)
 
       return scores, tf.gather(joined_indices, indices, batch_dims=1)
 
@@ -296,10 +312,9 @@ class DatasetIndexedTopK(tf.keras.layers.Layer):
           # Each element is a ([query_batch_size, k] tensor,
           # [query_batch_size, k] tensor) of scores and indices (where query_
           # batch_size is the leading dimension of the input query embeddings).
-          .map(top_scores)
+          .map(top_scores, num_parallel_calls=self._num_parallel_calls)
           # Reduce into a single tuple of output tensors by keeping a running
           # tally of top k scores and indices.
-          .reduce(initial_state, top_k)
-      )
+          .reduce(initial_state, top_k))
 
     return remove_sentinel_values(*results)

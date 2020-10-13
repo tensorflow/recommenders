@@ -90,10 +90,12 @@ class Ranking(tf.keras.layers.Layer, base.Task):
           y_true=labels, y_pred=predictions, sample_weight=sample_weight))
 
     for metric in self._prediction_metrics:
-      update_ops.append(metric.update_state(predictions))
+      update_ops.append(
+          metric.update_state(predictions, sample_weight=sample_weight))
 
     for metric in self._label_metrics:
-      update_ops.append(metric.update_state(labels))
+      update_ops.append(
+          metric.update_state(labels, sample_weight=sample_weight))
 
     with tf.control_dependencies(update_ops):
       return tf.identity(loss)

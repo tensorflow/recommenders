@@ -20,7 +20,7 @@ from typing import Optional, Text
 import tensorflow as tf
 
 from tensorflow_recommenders import layers
-from tensorflow_recommenders.metrics.corpus import FactorizedTopK
+from tensorflow_recommenders import metrics as tfrs_metrics
 from tensorflow_recommenders.tasks import base
 
 
@@ -39,13 +39,12 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
   scoring function.
   """
 
-  def __init__(
-      self,
-      loss: Optional[tf.keras.losses.Loss] = None,
-      metrics: Optional[FactorizedTopK] = None,
-      temperature: Optional[float] = None,
-      num_hard_negatives: Optional[int] = None,
-      name: Optional[Text] = None) -> None:
+  def __init__(self,
+               loss: Optional[tf.keras.losses.Loss] = None,
+               metrics: Optional[tfrs_metrics.FactorizedTopK] = None,
+               temperature: Optional[float] = None,
+               num_hard_negatives: Optional[int] = None,
+               name: Optional[Text] = None) -> None:
     """Initializes the task.
 
     Args:
@@ -70,7 +69,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     self._loss = loss if loss is not None else tf.keras.losses.CategoricalCrossentropy(
         from_logits=True, reduction=tf.keras.losses.Reduction.SUM)
 
-    self._corpus_metrics = metrics
+    self._factorized_metrics = metrics
     self._temperature = temperature
     self._num_hard_negatives = num_hard_negatives
 
@@ -139,11 +138,11 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     if not compute_metrics:
       return loss
 
-    if not self._corpus_metrics:
+    if not self._factorized_metrics:
       return loss
 
-    update_op = self._corpus_metrics.update_state(
-        query_embeddings, candidate_embeddings)
+    update_op = self._factorized_metrics.update_state(query_embeddings,
+                                                      candidate_embeddings)
 
     with tf.control_dependencies([update_op]):
       return tf.identity(loss)

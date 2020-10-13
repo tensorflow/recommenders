@@ -34,7 +34,7 @@ py_library(
         ":base",
         # py/tensorflow dep,
         "//tensorflow_recommenders/layers",
-        "//tensorflow_recommenders/metrics:corpus",
+        "//tensorflow_recommenders/metrics",
     ],
 )
 

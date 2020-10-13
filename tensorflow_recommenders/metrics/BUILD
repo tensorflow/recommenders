@@ -14,13 +14,13 @@ py_library(
     srcs = ["__init__.py"],
     srcs_version = "PY3",
     deps = [
-        ":corpus",
+        ":factorized_top_k",
     ],
 )
 
 py_library(
-    name = "corpus",
-    srcs = ["corpus.py"],
+    name = "factorized_top_k",
+    srcs = ["factorized_top_k.py"],
     srcs_version = "PY3",
     deps = [
         # py/tensorflow dep,
@@ -29,13 +29,15 @@ py_library(
 )
 
 py_test(
-    name = "corpus_test",
-    srcs = ["corpus_test.py"],
+    name = "factorized_top_k_test",
+    srcs = ["factorized_top_k_test.py"],
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
         ":metrics",
+        # py/absl/testing:parameterized dep,
         # py/numpy dep,
         # py/tensorflow dep,
+        "//tensorflow_recommenders/layers",
     ],
 )

@@ -14,4 +14,4 @@
 
 """Metrics."""
 
-from tensorflow_recommenders.metrics.corpus import FactorizedTopK
+from tensorflow_recommenders.metrics.factorized_top_k import FactorizedTopK

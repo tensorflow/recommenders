@@ -8,6 +8,16 @@
     switching off metric computation.
 -   `tfrs.tasks.Ranking` now accepts label and prediction metrics.
 
+### Breaking changes
+
+-   Corpus retrieval metrics and layers have been reworked.
+
+    `tfrs.layers.corpus.DatasetTopk` has been removed,
+    `tfrs.layers.corpus.DatasetIndexedTopK` renamed to
+    `tfrs.layers.factorized_top_k.Streaming`, `tfrs.layers.ann.BruteForce`
+    renamed to `tfrs.layers.factorized_top_k.BruteForce`. All top-k retrieval
+    layers (`BruteForce`, `Streaming`) now follow a common interface.
+
 ### Changed
 
 -   `Dataset` parallelism enabled by default in `DatasetTopK` and

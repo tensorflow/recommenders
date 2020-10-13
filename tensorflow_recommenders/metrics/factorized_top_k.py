@@ -13,9 +13,9 @@
 # limitations under the License.
 
 # lint-as: python3
-"""Corpus metrics."""
+"""Factorized retrieval top K metrics."""
 
-from typing import List, Optional, Sequence, Text
+from typing import List, Optional, Sequence, Text, Union
 
 import tensorflow as tf
 
@@ -23,20 +23,15 @@ from tensorflow_recommenders import layers
 
 
 class FactorizedTopK(tf.keras.layers.Layer):
-  """Computes top-K metrics for a factorized retrieval model.
+  """Computes metrics for across top K candidates surfaced by a retrieval model.
 
-  The metrics are computed across a corpus of candidates in a streaming manner,
-  allowing metrics such as precision-at-k and recall-at-k to be computed over
-  corpora of millions of candidates.
-
-  The metrics:
-  - top K categorical accuracy: how often the true candidate is in the top K
-    candidates for a given query.
+  The default metric is top K categorical accuracy: how often the true candidate
+   is in the top K candidates for a given query.
   """
 
   def __init__(
       self,
-      candidates: tf.data.Dataset,
+      candidates: Union[layers.factorized_top_k.TopK, tf.data.Dataset],
       metrics: Optional[Sequence[tf.keras.metrics.Metric]] = None,
       k: int = 100,
       name: Text = "factorized_top_k",
@@ -44,8 +39,9 @@ class FactorizedTopK(tf.keras.layers.Layer):
     """Initializes the metric.
 
     Args:
-      candidates: Dataset of candidate features. Elements of the dataset must be
-        candidate embeddings.
+      candidates: A layer for retrieving top candidates in response
+        to a query, or a dataset of candidate embeddings from which
+        candidates should be retrieved.
       metrics: The metrics to compute. If not supplied, will compute top-K
         categorical accuracy metrics.
       k: The number of top scoring candidates to retrieve for metric evaluation.
@@ -60,6 +56,9 @@ class FactorizedTopK(tf.keras.layers.Layer):
               k=x, name=f"{self.name}/top_{x}_categorical_accuracy")
           for x in [1, 5, 10, 50, 100]
       ]
+
+    if isinstance(candidates, tf.data.Dataset):
+      candidates = layers.factorized_top_k.Streaming(k=k).index(candidates)
 
     self._k = k
     self._candidates = candidates
@@ -81,9 +80,7 @@ class FactorizedTopK(tf.keras.layers.Layer):
     positive_scores = tf.reduce_sum(
         query_embeddings * true_candidate_embeddings, axis=1, keepdims=True)
 
-    top_k_predictions = layers.corpus.DatasetTopK(
-        candidates=self._candidates, k=self._k)(
-            query_embeddings)
+    top_k_predictions, _ = self._candidates(query_embeddings, k=self._k)
 
     y_true = tf.concat(
         [tf.ones(tf.shape(positive_scores)),

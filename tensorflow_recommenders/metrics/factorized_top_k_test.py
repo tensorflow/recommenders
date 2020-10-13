@@ -13,17 +13,25 @@
 # limitations under the License.
 
 # Lint-as: python3
-"""Tests corpus metrics."""
+"""Tests factorized top K metrics."""
+
+from absl.testing import parameterized
 
 import numpy as np
 import tensorflow as tf
 
+from tensorflow_recommenders import layers
 from tensorflow_recommenders import metrics
 
 
-class CorpusTest(tf.test.TestCase):
+class FactorizedTopKTest(tf.test.TestCase, parameterized.TestCase):
 
-  def test_factorized_top_k(self):
+  @parameterized.parameters(
+      layers.factorized_top_k.Streaming,
+      layers.factorized_top_k.BruteForce,
+      None,
+  )
+  def test_factorized_top_k(self, top_k_layer):
 
     rng = np.random.RandomState(42)
 
@@ -41,8 +49,13 @@ class CorpusTest(tf.test.TestCase):
 
     ks = [1, 5, 10, 50]
 
+    candidates = tf.data.Dataset.from_tensor_slices(candidates).batch(32)
+
+    if top_k_layer is not None:
+      candidates = top_k_layer().index(candidates)
+
     metric = metrics.FactorizedTopK(
-        candidates=tf.data.Dataset.from_tensor_slices(candidates).batch(32),
+        candidates=candidates,
         metrics=[
             tf.keras.metrics.TopKCategoricalAccuracy(
                 k=x, name=f"top_{x}_categorical_accuracy") for x in ks

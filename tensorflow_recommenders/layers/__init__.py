@@ -15,6 +15,5 @@
 # Lint-as: python3
 """Layers."""
 
-from tensorflow_recommenders.layers import ann
-from tensorflow_recommenders.layers import corpus
+from tensorflow_recommenders.layers import factorized_top_k
 from tensorflow_recommenders.layers import loss

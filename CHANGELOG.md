@@ -7,6 +7,7 @@
 -   `tfrs.tasks.Ranking.call` now accepts a `compute_metrics` argument to allow
     switching off metric computation.
 -   `tfrs.tasks.Ranking` now accepts label and prediction metrics.
+-   Add metrics setter/getters on `tfrs.tasks.Retrieval`.
 
 ### Breaking changes
 

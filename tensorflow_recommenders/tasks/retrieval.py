@@ -73,6 +73,19 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     self._temperature = temperature
     self._num_hard_negatives = num_hard_negatives
 
+  @property
+  def factorized_metrics(self) -> Optional[tfrs_metrics.FactorizedTopK]:
+    """The metrics object used to compute retrieval metrics."""
+
+    return self._factorized_metrics
+
+  @factorized_metrics.setter
+  def factorized_metrics(self,
+                         value: Optional[tfrs_metrics.FactorizedTopK]) -> None:
+    """Sets factorized metrics."""
+
+    self._factorized_metrics = value
+
   def call(self,
            query_embeddings: tf.Tensor,
            candidate_embeddings: tf.Tensor,

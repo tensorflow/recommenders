@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased][unreleased]
+## [0.2.0][2020-10-15]
 
 ### Added
 

@@ -83,6 +83,8 @@ class RetrievalTest(tf.test.TestCase):
         loss = task(query_embeddings=query, candidate_embeddings=candidate)
 
         sess.run([var.initializer for var in task.variables])
+        for metric in task.metrics:
+          sess.run([var.initializer for var in metric.variables])
         sess.run(loss)
 
         metrics_ = {

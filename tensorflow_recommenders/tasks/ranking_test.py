@@ -72,6 +72,8 @@ class RankingTest(tf.test.TestCase):
         loss = task(predictions=predictions, labels=labels)
 
         sess.run([var.initializer for var in task.variables])
+        for metric in task.metrics:
+          sess.run([var.initializer for var in metric.variables])
         sess.run(loss)
 
         metrics = {

@@ -41,9 +41,9 @@ import tensorflow_datasets as tfds
 import tensorflow_recommenders as tfrs
 
 # Ratings data.
-ratings = tfds.load('movie_lens/100k-ratings', split="train")
+ratings = tfds.load('movielens/100k-ratings', split="train")
 # Features of all the available movies.
-movies = tfds.load('movie_lens/100k-movies', split="train")
+movies = tfds.load('movielens/100k-movies', split="train")
 
 # Select the basic features.
 ratings = ratings.map(lambda x: {

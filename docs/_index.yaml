@@ -42,8 +42,8 @@ landing_page:
         import tensorflow_recommenders as tfrs
 
         # Load data on movie ratings.
-        ratings = tfds.load("movie_lens/100k-ratings", split="train")
-        movies = tfds.load("movie_lens/100k-movies", split="train")
+        ratings = tfds.load("movielens/100k-ratings", split="train")
+        movies = tfds.load("movielens/100k-movies", split="train")
 
         # Build flexible representation models.
         user_model = tf.keras.Sequential([...])

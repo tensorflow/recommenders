@@ -42,7 +42,8 @@ class Model(tf.keras.Model):
   different optimizers for different variables, or manipulating gradients.
 
   Keras has an excellent tutorial on how to
-  do this [here](https://keras.io/guides/customizing_what_happens_in_fit/).
+  do this [here](
+  https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit).
   """
 
   def compute_loss(self, inputs, training: bool = False) -> tf.Tensor:

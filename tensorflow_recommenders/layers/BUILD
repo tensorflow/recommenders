@@ -14,8 +14,31 @@ py_library(
     srcs = ["__init__.py"],
     srcs_version = "PY3",
     deps = [
+        ":dcn",
         ":factorized_top_k",
         ":loss",
+    ],
+)
+
+py_library(
+    name = "dcn",
+    srcs = ["dcn.py"],
+    srcs_version = "PY3",
+    deps = [
+        # py/numpy dep,
+        # py/tensorflow dep,
+    ],
+)
+
+py_test(
+    name = "dcn_test",
+    srcs = ["dcn_test.py"],
+    python_version = "PY3",
+    srcs_version = "PY3",
+    deps = [
+        ":dcn",
+        # py/numpy dep,
+        # py/tensorflow dep,
     ],
 )
 

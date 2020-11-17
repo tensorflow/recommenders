@@ -1,5 +1,11 @@
 # Changelog
 
+## [unlreased][unreleased]
+
+### Added
+
+-   Deep cross networks: efficient ways of learning feature interactions.
+
 ## [0.2.0][2020-10-15]
 
 ### Added

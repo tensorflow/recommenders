@@ -65,6 +65,7 @@ py_library(
 # Tests
 py_test(
     name = "factorized_top_k_test",
+    size = "large",
     srcs = ["factorized_top_k_test.py"],
     python_version = "PY3",
     srcs_version = "PY3",

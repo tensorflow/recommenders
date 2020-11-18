@@ -15,6 +15,7 @@
 # Lint-as: python3
 """Tests for factorized top K layers."""
 import itertools
+import os
 
 from absl.testing import parameterized
 
@@ -84,6 +85,77 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
                         (42, 123, 256), (np.int64, np.str, None)))
   def test_brute_force(self, *args, **kwargs):
     self.run_top_k_test(factorized_top_k.BruteForce, *args, **kwargs)
+
+  @parameterized.parameters(np.str, np.float32, np.float64, np.int32, np.int64)
+  def test_scann(self, identifier_dtype):
+
+    num_candidates, num_queries = (1000, 4)
+
+    rng = np.random.RandomState(42)
+    candidates = rng.normal(size=(num_candidates, 4)).astype(np.float32)
+    query = rng.normal(size=(num_queries, 4)).astype(np.float32)
+    candidate_names = np.arange(num_candidates).astype(identifier_dtype)
+
+    scann = factorized_top_k.ScaNN()
+    scann.index(candidates, candidate_names)
+
+    for _ in range(100):
+      pre_serialization_results = scann(query[:2])
+
+    path = os.path.join(self.get_temp_dir(), "query_model")
+    scann.save(
+        path,
+        options=tf.saved_model.SaveOptions(namespace_whitelist=["Scann"]))
+    loaded = tf.keras.models.load_model(path)
+
+    for _ in range(100):
+      post_serialization_results = loaded(tf.constant(query[:2]))
+
+    self.assertAllEqual(post_serialization_results, pre_serialization_results)
+
+  def test_scann_dataset_arg_no_identifiers(self):
+
+    num_candidates = 100
+    candidates = tf.data.Dataset.from_tensor_slices(
+        np.random.normal(size=(num_candidates, 4)).astype(np.float32))
+
+    index = factorized_top_k.ScaNN()
+    index.index(candidates.batch(100))
+
+  def test_scann_dataset_arg_with_identifiers(self):
+
+    num_candidates = 100
+    candidates = tf.data.Dataset.from_tensor_slices(
+        np.random.normal(size=(num_candidates, 4)).astype(np.float32))
+    identifiers = tf.data.Dataset.from_tensor_slices(np.arange(num_candidates))
+
+    index = factorized_top_k.ScaNN()
+    index.index(candidates.batch(100), identifiers)
+
+  @parameterized.parameters(
+      itertools.product(
+          (5, 10),
+          (3, 16),
+          (3, 15, 16),
+          # A batch size of 3 ensures the batches are smaller than k.
+          (1024, 128),
+          (42, 123, 256),
+          (np.int64, np.str, None),
+      )
+  )
+  def test_scann_top_k(self, k, batch_size, num_queries, num_candidates,
+                       random_seed, indices_dtype):
+
+    def scann(k):
+      """Returns brute-force-like ScaNN for testing."""
+      return factorized_top_k.ScaNN(
+          k=k,
+          num_leaves=1,
+          num_leaves_to_search=1,
+          num_reordering_candidates=num_candidates)
+
+    self.run_top_k_test(scann, k, batch_size, num_queries, num_candidates,
+                        random_seed, indices_dtype)
 
 
 if __name__ == "__main__":

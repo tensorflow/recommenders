@@ -20,7 +20,7 @@ install_tf "$TF_VERSION"
 
 # Install TensorFlow Recommenders.
 echo "Installing TensorFlow Recommenders..."
-pip install -e .
+pip install -e .[docs]
 
 # Test successful build.
 echo "Testing import..."

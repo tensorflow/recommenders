@@ -13,14 +13,22 @@
 # limitations under the License.
 
 # Lint as: python3
+# pylint: disable=g-import-not-at-top
 """Layers for retrieving top K recommendations from factorized retrieval models."""
 
 import abc
 import contextlib
-
 from typing import Dict, Optional, Text, Tuple, Union
+import uuid
 
 import tensorflow as tf
+
+try:
+  # ScaNN is an optional dependency, and might not be present.
+  from scann import scann_ops
+  _HAVE_SCANN = True
+except ImportError:
+  _HAVE_SCANN = False
 
 
 @contextlib.contextmanager
@@ -375,3 +383,196 @@ class BruteForce(tf.keras.Model, TopK):
     values, indices = tf.math.top_k(scores, k=k)
 
     return values, tf.gather(self._identifiers, indices)
+
+
+class ScaNN(tf.keras.Model, TopK):
+  """ScaNN approximate retrieval index for a factorized retrieval model.
+
+  This layer uses the state-of-the-art
+  [ScaNN](https://github.com/google-research/google-research/tree/master/scann)
+  library to retrieve the best candidates for a given query.
+  """
+
+  def __init__(self,
+               query_model: Optional[tf.keras.Model] = None,
+               k: int = 10,
+               distance_measure: Text = "dot_product",
+               num_leaves: int = 100,
+               num_leaves_to_search: int = 10,
+               dimensions_per_block: int = 2,
+               num_reordering_candidates: Optional[int] = None,
+               parallelize_batch_searches: bool = True,
+               name: Optional[Text] = None):
+    """Initializes the layer.
+
+    Args:
+      query_model: Optional Keras model for representing queries. If provided,
+        will be used to transform raw features into query embeddings when
+        querying the layer. If not provided, the layer will expect to be given
+        query embeddings as inputs.
+      k: Default number of results to retrieve. Can be overridden in `call`.
+      distance_measure: Distance metric to use.
+      num_leaves: Number of leaves.
+      num_leaves_to_search: Number of leaves to search.
+      dimensions_per_block: Controls the dataset compression ratio. A higher
+        number results in greater compression, leading to faster scoring but
+        less accuracy and more memory usage.
+      num_reordering_candidates: If set, the index will perform a final
+        refinement pass on `num_reordering_candidates` candidates after
+        retrieving an initial set of neighbours. This helps improve accuracy,
+        but requires the original representations to be kept, and so will
+        increase the final model size."
+      parallelize_batch_searches: Whether batch querying should be done in
+        parallel.
+      name: Name of the layer.
+
+    Raises:
+      ImportError: if the scann library is not installed.
+    """
+
+    super().__init__(name=name)
+
+    if not _HAVE_SCANN:
+      raise ImportError(
+          "The scann library is not present. Please install it using "
+          "`pip install scann` to use the ScaNN layer."
+      )
+
+    self.query_model = query_model
+    self._k = k
+    self._parallelize_batch_searches = parallelize_batch_searches
+    self._num_reordering_candidates = num_reordering_candidates
+
+    def build_searcher(candidates):
+      builder = scann_ops.builder(
+          db=candidates,
+          num_neighbors=self._k,
+          distance_measure=distance_measure)
+
+      builder = builder.tree(
+          num_leaves=num_leaves, num_leaves_to_search=num_leaves_to_search)
+      builder = builder.score_ah(dimensions_per_block=dimensions_per_block)
+
+      if self._num_reordering_candidates is not None:
+        builder = builder.reorder(self._num_reordering_candidates)
+
+      # Set a unique name to prevent unintentional sharing between
+      # ScaNN instances.
+      return builder.build(shared_name=f"{self.name}/{uuid.uuid4()}")
+
+    self._build_searcher = build_searcher
+    self._serialized_searcher = None
+
+  def index(
+      self,
+      candidates: Union[tf.Tensor, tf.data.Dataset],
+      identifiers: Optional[Union[tf.Tensor,
+                                  tf.data.Dataset]] = None) -> "ScaNN":
+    """Builds the retrieval index.
+
+    When called multiple times the existing index will be dropped and a new one
+    created.
+
+    Args:
+      candidates: Matrix (or dataset) of candidate embeddings.
+      identifiers: Optional tensor (or dataset) of candidate identifiers. If
+        given these will be return to identify top candidates when performing
+        searches. If not given, indices into the candidates tensor will be given
+        instead.
+
+    Returns:
+      Self.
+    """
+
+    if isinstance(candidates, tf.data.Dataset):
+      candidates = tf.concat(list(candidates), axis=0)  # pytype: disable=wrong-arg-types
+
+    if identifiers is None:
+      identifiers = tf.range(candidates.shape[0])
+
+    if isinstance(identifiers, tf.data.Dataset):
+      identifiers = tf.concat(list(identifiers), axis=0)  # pytype: disable=wrong-arg-type
+
+    if len(candidates.shape) != 2:
+      raise ValueError(
+          f"The candidates tensor must be 2D (got {candidates.shape}).")
+
+    # We need any value that has the correct dtype.
+    identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)
+
+    self._serialized_searcher = self._build_searcher(
+        candidates).serialize_to_module()
+
+    self._identifiers = self.add_weight(
+        name="identifiers",
+        dtype=identifiers.dtype,
+        shape=identifiers.shape,
+        initializer=tf.keras.initializers.Constant(
+            value=identifiers_initial_value),
+        trainable=False)
+    self._candidates = self.add_weight(
+        name="candidates",
+        dtype=candidates.dtype,
+        shape=candidates.shape,
+        initializer=tf.keras.initializers.Zeros(),
+        trainable=False)
+
+    self._identifiers.assign(identifiers)
+    self._candidates.assign(candidates)
+
+    return self
+
+  def call(self,
+           queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
+           k: Optional[int] = None) -> Tuple[tf.Tensor, tf.Tensor]:
+    """Query the index.
+
+    Args:
+      queries: Query features. If `query_model` was provided in the constructor,
+        these can be raw query features that will be processed by the query
+        model before performing retrieval. If `query_model` was not provided,
+        these should be pre-computed query embeddings.
+      k: The number of candidates to retrieve. Defaults to constructor `k`
+        parameter if not supplied.
+
+    Returns:
+      Tuple of (top candidate scores, top candidate identifiers).
+
+    Raises:
+      ValueError if `index` has not been called.
+      ValueError if `queries` is not a tensor (after being passed through
+        the query model).
+    """
+
+    k = k if k is not None else self._k
+
+    if self._serialized_searcher is None:
+      raise ValueError("The `index` method must be called first to "
+                       "create the retrieval index.")
+
+    searcher = scann_ops.searcher_from_module(self._serialized_searcher,
+                                             self._candidates)
+
+    if self.query_model is not None:
+      queries = self.query_model(queries)
+
+    if not isinstance(queries, tf.Tensor):
+      raise ValueError(f"Queries must be a tensor, got {type(queries)}.")
+
+    if len(queries.shape) == 2:
+      if self._parallelize_batch_searches:
+        result = searcher.search_batched_parallel(
+            queries, final_num_neighbors=k)
+      else:
+        result = searcher.search_batched(queries, final_num_neighbors=k)
+      indices = result.indices
+      distances = result.distances
+    elif len(queries.shape) == 1:
+      result = searcher.search(queries, final_num_neighbors=k)
+      indices = result.index
+      distances = result.distance
+    else:
+      raise ValueError(
+          f"Queries must be of rank 2 or 1, got {len(queries.shape)}.")
+
+    return distances, tf.gather(self._identifiers, indices)

@@ -9,4 +9,4 @@ source ./tools/build_scripts/pip_install.sh
 pip install pytest
 
 # Run tests.
-py.test .
+py.test -v .

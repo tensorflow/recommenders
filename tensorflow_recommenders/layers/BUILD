@@ -47,6 +47,7 @@ py_library(
     srcs = ["factorized_top_k.py"],
     srcs_version = "PY3",
     deps = [
+        # py/scann dep,
         # py/tensorflow dep,
     ],
 )

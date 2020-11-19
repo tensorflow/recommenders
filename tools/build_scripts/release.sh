@@ -40,9 +40,9 @@ twine check dist/*
 
 # Install and test the distribution
 echo "Running tests..."
-pip install dist/*.whl
+pip install dist/*.whl[docs]
 pip install pytest
-py.test .
+py.test -v .
 
 # Publish to PyPI
 read -p "Publish? (y/n) " -r

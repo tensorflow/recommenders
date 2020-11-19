@@ -21,3 +21,7 @@ toc:
   style: divider
 - title: "Multitask recommenders"
   path: /recommenders/examples/multitask
+- title: "Cross networks"
+  path: /recommenders/examples/dcn
+- title: "Efficient serving"
+  path: /recommenders/examples/efficient_serving

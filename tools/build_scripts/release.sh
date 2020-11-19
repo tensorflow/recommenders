@@ -40,7 +40,8 @@ twine check dist/*
 
 # Install and test the distribution
 echo "Running tests..."
-pip install dist/*.whl[docs]
+pip install dist/*.whl
+pip install scann
 pip install pytest
 py.test -v .
 

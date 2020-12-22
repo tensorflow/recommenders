@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1][2020-12-22]
+
+### Changed
+
+-   Pinned TensorFlow to 2.3.x and ScaNN to 1.1.1 to ensure TF and ScaNN
+    versions are in lockstep.
+
 ## [0.3.0][2020-11-18]
 
 ### Added

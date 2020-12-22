@@ -21,7 +21,7 @@ It's built on Keras and aims to have a gentle learning curve while still giving
 you the flexibility to build complex models.
 """
 
-__version__ = "v0.3.1"
+__version__ = "v0.3.2"
 
 from tensorflow_recommenders import examples
 # Internal extension library import.

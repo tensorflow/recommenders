@@ -139,7 +139,7 @@ class Streaming(tf.keras.layers.Layer, TopK):
     self._num_parallel_calls = num_parallel_calls
     self._sorted = sorted_order
 
-    self._counter = self.add_weight("counter", dtype=tf.int32)
+    self._counter = self.add_weight("counter", dtype=tf.int32, trainable=False)
 
   def index(self,
             candidates: tf.data.Dataset,

@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased][unreleased]
+
+### Added
+
+-   `TopK` layers now come with a `query_with_exclusions` method, allowing
+    certain candidates to be excluded from top-k retrieval.
+
+### Changed
+
+-   `factorized_top_k.Streaming` layer now accepts a query model, like other
+    `factorized_top_k` layers.
+
 ## [0.3.2][2020-12-22]
 
 ### Changed

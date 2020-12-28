@@ -50,7 +50,65 @@ def _wrap_batch_too_small_error(k: int):
                        "argument to True in the constructor. ".format(k=k))
 
 
-class TopK(abc.ABC):
+def _take_along_axis(arr: tf.Tensor, indices: tf.Tensor) -> tf.Tensor:
+  """Partial TF implementation of numpy.take_along_axis.
+
+  See
+  https://numpy.org/doc/stable/reference/generated/numpy.take_along_axis.html
+  for details.
+
+  Args:
+    arr: 2D matrix of source values.
+    indices: 2D matrix of indices.
+
+  Returns:
+    2D matrix of values selected from the input.
+  """
+
+  row_indices = tf.tile(
+      tf.expand_dims(tf.range(tf.shape(indices)[0]), 1),
+      [1, tf.shape(indices)[1]])
+  gather_indices = tf.concat(
+      [tf.reshape(row_indices, (-1, 1)),
+       tf.reshape(indices, (-1, 1))], axis=1)
+
+  return tf.reshape(tf.gather_nd(arr, gather_indices), tf.shape(indices))
+
+
+def _exclude(scores: tf.Tensor, identifiers: tf.Tensor, exclude: tf.Tensor,
+             k: int) -> Tuple[tf.Tensor, tf.Tensor]:
+  """Removes a subset of candidates from top K candidates.
+
+  For each row of inputs excludes those candidates whose identifiers match
+  any of the identifiers present in the exclude matrix for that row.
+
+  Args:
+    scores: 2D matrix of candidate scores.
+    identifiers: 2D matrix of candidate identifiers.
+    exclude: 2D matrix of identifiers to exclude.
+    k: Number of candidates to return.
+
+  Returns:
+    Tuple of (scores, indices) of candidates after exclusions.
+  """
+
+  idents = tf.expand_dims(identifiers, -1)
+  exclude = tf.expand_dims(exclude, 1)
+
+  isin = tf.math.reduce_any(tf.math.equal(idents, exclude), -1)
+
+  # Set the scores of the excluded candidates to a very low value.
+  adjusted_scores = (scores - tf.cast(isin, tf.float32) * 1.0e5)
+
+  k = tf.math.minimum(k, tf.shape(scores)[1])
+
+  _, indices = tf.math.top_k(adjusted_scores, k=k)
+
+  return _take_along_axis(scores,
+                          indices), _take_along_axis(identifiers, indices)
+
+
+class TopK(tf.keras.Model, abc.ABC):
   """Interface for top K layers.
 
   Implementers must provide the following two methods:
@@ -61,6 +119,12 @@ class TopK(abc.ABC):
     queries.
   """
 
+  def __init__(self, k: int, **kwargs) -> None:
+    """Initializes the base class."""
+
+    super().__init__(**kwargs)
+    self._k = k
+
   @abc.abstractmethod
   def index(
       self,
@@ -69,12 +133,18 @@ class TopK(abc.ABC):
                                   tf.data.Dataset]] = None) -> "TopK":
     """Builds the retrieval index.
 
+    When called multiple times the existing index will be dropped and a new one
+    created.
+
     Args:
       candidates: Matrix (or dataset) of candidate embeddings.
       identifiers: Optional tensor (or dataset) of candidate identifiers. If
-        given these will be return to identify top candidates when performing
-        searches. If not given, indices into the candidates tensor will be given
-        instead.
+        given, these will be used to as identifiers of top candidates returned
+        when performing searches. If not given, indices into the candidates
+        tensor will be given instead.
+
+    Returns:
+      Self.
     """
 
     raise NotImplementedError()
@@ -88,8 +158,12 @@ class TopK(abc.ABC):
     """Query the index.
 
     Args:
-      queries: Query features.
-      k: Number of candidates to retrieve.
+      queries: Query features. If `query_model` was provided in the constructor,
+        these can be raw query features that will be processed by the query
+        model before performing retrieval. If `query_model` was not provided,
+        these should be pre-computed query embeddings.
+      k: The number of candidates to retrieve. If not supplied, defaults to the
+        `k` value supplied in the constructor.
 
     Returns:
       Tuple of (top candidate scores, top candidate identifiers).
@@ -100,8 +174,72 @@ class TopK(abc.ABC):
 
     raise NotImplementedError()
 
+  @tf.function
+  def query_with_exclusions(
+      self,
+      queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
+      exclusions: tf.Tensor,
+      k: Optional[int] = None,
+  ) -> Tuple[tf.Tensor, tf.Tensor]:
+    """Query the index.
 
-class Streaming(tf.keras.layers.Layer, TopK):
+    Args:
+      queries: Query features. If `query_model` was provided in the constructor,
+        these can be raw query features that will be processed by the query
+        model before performing retrieval. If `query_model` was not provided,
+        these should be pre-computed query embeddings.
+      exclusions: `[query_batch_size, num_to_exclude]` tensor of identifiers to
+        be excluded from the top-k calculation. This is most commonly used to
+        exclude previously seen candidates from retrieval. For example, if a
+        user has already seen items with ids "42" and "43", you could set
+        exclude to `[["42", "43"]]`.
+      k: The number of candidates to retrieve. Defaults to constructor `k`
+        parameter if not supplied.
+
+    Returns:
+      Tuple of (top candidate scores, top candidate identifiers).
+
+    Raises:
+      ValueError if `index` has not been called.
+      ValueError if `queries` is not a tensor (after being passed through
+        the query model).
+    """
+
+    # Ideally, `exclusions` would simply be an optional parameter to
+    # `call`. However, Keras is unable to handle `call` signatures
+    # that have more than one Tensor input parameter. The alternative
+    # is to either pack all inputs into the first positional argument
+    # (via tuples or dicts), or else have a separate method. We opt
+    # for the second solution here. The ergonomics in either case aren't
+    # great, but having two methods is simpler to explain.
+    # See https://github.com/tensorflow/tensorflow/blob/v2.4.0/tensorflow/
+    # python/keras/engine/base_layer.py#L942 for details of why Keras
+    # puts us in this predicament.
+
+    k = k if k is not None else self._k
+
+    adjusted_k = k + exclusions.shape[1]
+    x, y = self(queries=queries, k=adjusted_k)
+    return _exclude(x, y, exclude=exclusions, k=k)
+
+  def _reset_tf_function_cache(self):
+    """Resets the tf.function cache.
+
+    We need to invalidate the compiled tf.function cache here. We just
+    dropped some variables and created new ones. The concrete function is
+    still referring to the old ones - and because it only holds weak
+    references, this does not prevent the old variables being garbage
+    collected. The end result is that it references dead objects.
+    To resolve this, we throw away the existing tf.function object and
+    create a new one.
+    """
+
+    if hasattr(self.query_with_exclusions, "python_function"):
+      self.query_with_exclusions = tf.function(
+          self.query_with_exclusions.python_function)
+
+
+class Streaming(TopK):
   """Retrieves K highest scoring items and their ids from a large dataset.
 
   Used to efficiently retrieve top K query-candidate scores from a dataset,
@@ -109,6 +247,7 @@ class Streaming(tf.keras.layers.Layer, TopK):
   """
 
   def __init__(self,
+               query_model: Optional[tf.keras.Model] = None,
                k: int = 10,
                handle_incomplete_batches: bool = True,
                num_parallel_calls: int = tf.data.experimental.AUTOTUNE,
@@ -116,6 +255,10 @@ class Streaming(tf.keras.layers.Layer, TopK):
     """Initializes the layer.
 
     Args:
+      query_model: Optional Keras model for representing queries. If provided,
+        will be used to transform raw features into query embeddings when
+        querying the layer. If not provided, the layer will expect to be given
+        query embeddings as inputs.
       k: Number of top scores to retrieve.
       handle_incomplete_batches: When True, candidate batches smaller than k
         will be correctly handled at the price of some performance. As an
@@ -130,11 +273,11 @@ class Streaming(tf.keras.layers.Layer, TopK):
       ValueError if candidate elements are not tuples.
     """
 
-    super().__init__()
+    super().__init__(k=k)
 
+    self.query_model = query_model
     self._candidates = None
     self._identifiers = None
-    self._k = k
     self._handle_incomplete_batches = handle_incomplete_batches
     self._num_parallel_calls = num_parallel_calls
     self._sorted = sorted_order
@@ -144,17 +287,20 @@ class Streaming(tf.keras.layers.Layer, TopK):
   def index(self,
             candidates: tf.data.Dataset,
             identifiers: Optional[tf.data.Dataset] = None) -> "Streaming":
-    """Sets the dataset of candidates over which to compute streaming top K.
+    """Builds the retrieval index.
+
+    When called multiple times the existing index will be dropped and a new one
+    created.
 
     Args:
       candidates: Matrix (or dataset) of candidate embeddings.
       identifiers: Optional tensor (or dataset) of candidate identifiers. If
-        given these will be return to identify top candidates when performing
-        searches. If not given, indices into the candidates datset will be given
-        instead.
+        given, these will be used to as identifiers of top candidates returned
+        when performing searches. If not given, indices into the candidates
+        tensor will be given instead.
 
     Returns:
-      Self for chaining.
+      Self.
     """
 
     self._candidates = candidates
@@ -162,23 +308,37 @@ class Streaming(tf.keras.layers.Layer, TopK):
 
     return self
 
-  def call(self,
-           query_embeddings: tf.Tensor,
-           k: Optional[int] = None) -> Tuple[tf.Tensor, tf.Tensor]:
+  def call(
+      self,
+      queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
+      k: Optional[int] = None,
+  ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Computes K highest scores and candidate indices for a given query.
 
     Args:
-      query_embeddings: [query_batch_size, embedding_dim] tensor of query
-        embeddings.
+      queries: Query features. If `query_model` was provided in the constructor,
+        these can be raw query features that will be processed by the query
+        model before performing retrieval. If `query_model` was not provided,
+        these should be pre-computed query embeddings.
       k: Number of elements to retrieve. If not set, will default to the k set
         in the constructor.
 
     Returns:
       Tuple of [query_batch_size, k] tensor of top scores for each query and
       [query_batch_size, k] tensor of indices for highest scoring candidates.
+
+    Raises:
+      ValueError if `index` has not been called.
     """
 
     k = k if k is not None else self._k
+
+    if self._candidates is None:
+      raise ValueError("The `index` method must be called first to "
+                       "create the retrieval index.")
+
+    if self.query_model is not None:
+      queries = self.query_model(queries)
 
     # Reset the element counter.
     self._counter.assign(0)
@@ -186,10 +346,7 @@ class Streaming(tf.keras.layers.Layer, TopK):
     def top_scores(candidate_index: tf.Tensor,
                    candidate_batch: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
       """Computes top scores and indices for a batch of candidates."""
-      scores = tf.matmul(
-          query_embeddings,
-          candidate_batch,
-          transpose_b=True)
+      scores = tf.matmul(queries, candidate_batch, transpose_b=True)
 
       if self._handle_incomplete_batches:
         k_ = tf.math.minimum(k, tf.shape(scores)[1])
@@ -235,12 +392,8 @@ class Streaming(tf.keras.layers.Layer, TopK):
 
     # Initialize the state with dummy scores and candidate indices.
     index_dtype = self._identifiers.element_spec.dtype if self._identifiers is not None else tf.int32
-    initial_state = (
-        tf.zeros((tf.shape(query_embeddings)[0], 0),
-                 dtype=tf.float32),
-        tf.zeros((tf.shape(query_embeddings)[0], 0),
-                 dtype=index_dtype)
-    )
+    initial_state = (tf.zeros((tf.shape(queries)[0], 0), dtype=tf.float32),
+                     tf.zeros((tf.shape(queries)[0], 0), dtype=index_dtype))
 
     def enumerate_rows(batch: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
       """Enumerates rows in each batch using a total element counter."""
@@ -270,7 +423,7 @@ class Streaming(tf.keras.layers.Layer, TopK):
     return results
 
 
-class BruteForce(tf.keras.Model, TopK):
+class BruteForce(TopK):
   """Brute force retrieval."""
 
   def __init__(self,
@@ -288,10 +441,9 @@ class BruteForce(tf.keras.Model, TopK):
       name: Name of the layer.
     """
 
-    super().__init__(name=name)
+    super().__init__(k=k, name=name)
 
     self.query_model = query_model
-    self._k = k
 
   def index(
       self,
@@ -306,9 +458,9 @@ class BruteForce(tf.keras.Model, TopK):
     Args:
       candidates: Matrix (or dataset) of candidate embeddings.
       identifiers: Optional tensor (or dataset) of candidate identifiers. If
-        given these will be return to identify top candidates when performing
-        searches. If not given, indices into the candidates tensor will be given
-        instead.
+        given, these will be used to as identifiers of top candidates returned
+        when performing searches. If not given, indices into the candidates
+        tensor will be given instead.
 
     Returns:
       Self.
@@ -347,11 +499,15 @@ class BruteForce(tf.keras.Model, TopK):
     self._identifiers.assign(identifiers)
     self._candidates.assign(candidates)
 
+    self._reset_tf_function_cache()
+
     return self
 
-  def call(self,
-           queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
-           k: Optional[int] = None) -> Tuple[tf.Tensor, tf.Tensor]:
+  def call(
+      self,
+      queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
+      k: Optional[int] = None,
+  ) -> Tuple[tf.Tensor, tf.Tensor]:
     """Query the index.
 
     Args:
@@ -385,7 +541,7 @@ class BruteForce(tf.keras.Model, TopK):
     return values, tf.gather(self._identifiers, indices)
 
 
-class ScaNN(tf.keras.Model, TopK):
+class ScaNN(TopK):
   """ScaNN approximate retrieval index for a factorized retrieval model.
 
   This layer uses the state-of-the-art
@@ -430,7 +586,7 @@ class ScaNN(tf.keras.Model, TopK):
       ImportError: if the scann library is not installed.
     """
 
-    super().__init__(name=name)
+    super().__init__(k=k, name=name)
 
     if not _HAVE_SCANN:
       raise ImportError(
@@ -476,9 +632,9 @@ class ScaNN(tf.keras.Model, TopK):
     Args:
       candidates: Matrix (or dataset) of candidate embeddings.
       identifiers: Optional tensor (or dataset) of candidate identifiers. If
-        given these will be return to identify top candidates when performing
-        searches. If not given, indices into the candidates tensor will be given
-        instead.
+        given, these will be used to as identifiers of top candidates returned
+        when performing searches. If not given, indices into the candidates
+        tensor will be given instead.
 
     Returns:
       Self.
@@ -497,11 +653,11 @@ class ScaNN(tf.keras.Model, TopK):
       raise ValueError(
           f"The candidates tensor must be 2D (got {candidates.shape}).")
 
-    # We need any value that has the correct dtype.
-    identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)
-
     self._serialized_searcher = self._build_searcher(
         candidates).serialize_to_module()
+
+    # We need any value that has the correct dtype.
+    identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)
 
     self._identifiers = self.add_weight(
         name="identifiers",
@@ -519,6 +675,8 @@ class ScaNN(tf.keras.Model, TopK):
 
     self._identifiers.assign(identifiers)
     self._candidates.assign(candidates)
+
+    self._reset_tf_function_cache()
 
     return self
 
@@ -541,7 +699,7 @@ class ScaNN(tf.keras.Model, TopK):
     Raises:
       ValueError if `index` has not been called.
       ValueError if `queries` is not a tensor (after being passed through
-        the query model).
+        the query model) or is not rank 2.
     """
 
     k = k if k is not None else self._k

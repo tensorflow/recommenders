@@ -14,8 +14,11 @@
 
 # Lint-as: python3
 """Tests for factorized top K layers."""
+
 import itertools
 import os
+
+from typing import Any, Dict, Iterator
 
 from absl.testing import parameterized
 
@@ -25,10 +28,49 @@ import tensorflow as tf
 from tensorflow_recommenders.layers import factorized_top_k
 
 
+def test_cases(
+    k=(5, 10),
+    batch_size=(3, 16),
+    num_queries=(3, 15, 16),
+    num_candidates=(1024, 128),
+    indices_dtype=(np.str, None),
+    use_exclusions=(True, False)) -> Iterator[Dict[str, Any]]:
+  """Generates test cases.
+
+  Generates all possible combinations of input arguments as test cases.
+
+  Args:
+    k: The number of candidates to retrieve.
+    batch_size: The query batch size.
+    num_queries: Number of queries.
+    num_candidates: Number of candidates.
+    indices_dtype: The type of indices.
+    use_exclusions: Whether to test exclusions.
+
+  Yields:
+    Keyword argument dicts.
+  """
+
+  keys = ("k", "batch_size", "num_queries", "num_candidates", "indices_dtype",
+          "use_exclusions")
+
+  for values in itertools.product(k, batch_size, num_queries, num_candidates,
+                                  indices_dtype, use_exclusions):
+    yield dict(zip(keys, values))
+
+
 class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
 
-  def run_top_k_test(self, layer_class, k, batch_size, num_queries,
-                     num_candidates, random_seed, indices_dtype):
+  def run_top_k_test(self,
+                     layer_class,
+                     k,
+                     batch_size,
+                     num_queries,
+                     num_candidates,
+                     indices_dtype,
+                     use_exclusions,
+                     random_seed=42,
+                     check_export=True):
 
     layer = layer_class(k=k)
 
@@ -36,15 +78,26 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     candidates = rng.normal(size=(num_candidates, 4)).astype(np.float32)
     query = rng.normal(size=(num_queries, 4)).astype(np.float32)
 
-    if indices_dtype is not None:
-      candidate_indices = rng.normal(
-          size=(num_candidates)).astype(indices_dtype)
-    else:
-      candidate_indices = np.arange(num_candidates).astype(np.int64)
+    candidate_indices = np.arange(num_candidates).astype(
+        indices_dtype if indices_dtype is not None else np.int32)
+
+    exclude = rng.randint(0, num_candidates, size=(num_queries, 5))
 
     scores = np.dot(query, candidates.T)
-    expected_top_scores = -np.sort(-scores, axis=1)[:, :k]
-    indices = np.argsort(-scores, axis=1)[:, :k]
+
+    # Set scores of candidates chosen for exclusion to a low value.
+    adjusted_scores = scores.copy()
+    if use_exclusions:
+      exclude_identifiers = candidate_indices[exclude]
+      for row_idx, row in enumerate(exclude):
+        for col_idx in set(row):
+          adjusted_scores[row_idx, col_idx] -= 1000.0
+    else:
+      exclude_identifiers = None
+
+    # Get indices based on adjusted scores, but retain actual scores.
+    indices = np.argsort(-adjusted_scores, axis=1)[:, :k]
+    expected_top_scores = np.take_along_axis(scores, indices, 1)
     expected_top_indices = candidate_indices[indices]
 
     candidates = tf.data.Dataset.from_tensor_slices(candidates).batch(
@@ -58,7 +111,13 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
 
     # Call twice to ensure the results are repeatable.
     for _ in range(2):
-      top_scores, top_indices = (layer.index(candidates, identifiers)(query))
+      if use_exclusions:
+        layer.index(candidates, identifiers)
+        top_scores, top_indices = layer.query_with_exclusions(
+            query, exclude_identifiers)
+      else:
+        layer.index(candidates, identifiers)
+        top_scores, top_indices = layer(query)
 
     self.assertAllEqual(top_scores.shape, expected_top_scores.shape)
     self.assertAllEqual(top_indices.shape, expected_top_indices.shape)
@@ -67,22 +126,30 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     self.assertAllEqual(top_indices.numpy().astype(indices_dtype),
                         expected_top_indices)
 
-  @parameterized.parameters(
-      itertools.product(
-          (5, 10),
-          (3, 16),
-          (3, 15, 16),
-          # A batch size of 3 ensures the batches are smaller than k.
-          (1024, 3),
-          (42, 123, 256),
-          (np.int64, np.str, None),
-      ))
-  def test_streaming(self, *args, **kwargs):
-    self.run_top_k_test(factorized_top_k.Streaming, *args, **kwargs)
+    if not check_export:
+      return
 
-  @parameterized.parameters(
-      itertools.product((5, 10), (3, 16), (3, 15, 16), (1024, 128),
-                        (42, 123, 256), (np.int64, np.str, None)))
+    # Save and restore to check export.
+    path = os.path.join(self.get_temp_dir(), "layer")
+    layer.save(
+        path, options=tf.saved_model.SaveOptions(namespace_whitelist=["Scann"]))
+    restored = tf.keras.models.load_model(path)
+
+    if use_exclusions:
+      _, restored_top_indices = restored.query_with_exclusions(
+          query, exclude_identifiers)
+    else:
+      _, restored_top_indices = restored(query)
+
+    self.assertAllEqual(restored_top_indices.numpy().astype(indices_dtype),
+                        expected_top_indices)
+
+  @parameterized.parameters(test_cases())
+  def test_streaming(self, *args, **kwargs):
+    self.run_top_k_test(
+        factorized_top_k.Streaming, *args, check_export=False, **kwargs)
+
+  @parameterized.parameters(test_cases())
   def test_brute_force(self, *args, **kwargs):
     self.run_top_k_test(factorized_top_k.BruteForce, *args, **kwargs)
 
@@ -132,19 +199,9 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     index = factorized_top_k.ScaNN()
     index.index(candidates.batch(100), identifiers)
 
-  @parameterized.parameters(
-      itertools.product(
-          (5, 10),
-          (3, 16),
-          (3, 15, 16),
-          # A batch size of 3 ensures the batches are smaller than k.
-          (1024, 128),
-          (42, 123, 256),
-          (np.int64, np.str, None),
-      )
-  )
+  @parameterized.parameters(test_cases())
   def test_scann_top_k(self, k, batch_size, num_queries, num_candidates,
-                       random_seed, indices_dtype):
+                       indices_dtype, use_exclusions):
 
     def scann(k):
       """Returns brute-force-like ScaNN for testing."""
@@ -155,7 +212,7 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
           num_reordering_candidates=num_candidates)
 
     self.run_top_k_test(scann, k, batch_size, num_queries, num_candidates,
-                        random_seed, indices_dtype)
+                        indices_dtype, use_exclusions)
 
 
 if __name__ == "__main__":

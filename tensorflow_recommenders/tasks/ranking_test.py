@@ -29,7 +29,8 @@ class RankingTest(tf.test.TestCase):
     task = ranking.Ranking(
         metrics=[tf.keras.metrics.BinaryAccuracy(name="accuracy")],
         label_metrics=[tf.keras.metrics.Mean(name="label_mean")],
-        prediction_metrics=[tf.keras.metrics.Mean(name="prediction_mean")]
+        prediction_metrics=[tf.keras.metrics.Mean(name="prediction_mean")],
+        loss_metrics=[tf.keras.metrics.Mean(name="loss_mean")]
     )
 
     predictions = tf.constant([[1], [0.3]], dtype=tf.float32)
@@ -40,7 +41,8 @@ class RankingTest(tf.test.TestCase):
     expected_metrics = {
         "accuracy": 0.5,
         "label_mean": 1.0,
-        "prediction_mean": 0.65
+        "prediction_mean": 0.65,
+        "loss_mean": expected_loss
     }
 
     loss = task(predictions=predictions, labels=labels)
@@ -58,15 +60,19 @@ class RankingTest(tf.test.TestCase):
         task = ranking.Ranking(
             metrics=[tf.keras.metrics.BinaryAccuracy(name="accuracy")],
             label_metrics=[tf.keras.metrics.Mean(name="label_mean")],
-            prediction_metrics=[tf.keras.metrics.Mean(name="prediction_mean")]
+            prediction_metrics=[tf.keras.metrics.Mean(name="prediction_mean")],
+            loss_metrics=[tf.keras.metrics.Mean(name="loss_mean")]
         )
         predictions = tf.constant([[1], [0.3]], dtype=tf.float32)
         labels = tf.constant([[1], [1]], dtype=tf.float32)
 
+        # Standard log loss formula.
+        expected_loss = -(math.log(1) + math.log(0.3)) / 2.0
         expected_metrics = {
             "accuracy": 0.5,
             "label_mean": 1.0,
-            "prediction_mean": 0.65
+            "prediction_mean": 0.65,
+            "loss_mean": expected_loss
         }
 
         loss = task(predictions=predictions, labels=labels)

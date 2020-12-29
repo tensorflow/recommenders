@@ -43,6 +43,7 @@ class Ranking(tf.keras.layers.Layer, base.Task):
       metrics: Optional[List[tf.keras.metrics.Metric]] = None,
       prediction_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
       label_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
+      loss_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
       name: Optional[Text] = None) -> None:
     """Initializes the task.
 
@@ -52,6 +53,7 @@ class Ranking(tf.keras.layers.Layer, base.Task):
       prediction_metrics: List of Keras metrics used to summarize the
         predictions.
       label_metrics: List of Keras metrics used to summarize the labels.
+      loss_metrics: List of Keras metrics used to summarize the loss.
       name: Optional task name.
     """
 
@@ -62,6 +64,7 @@ class Ranking(tf.keras.layers.Layer, base.Task):
     self._ranking_metrics = metrics or []
     self._prediction_metrics = prediction_metrics or []
     self._label_metrics = label_metrics or []
+    self._loss_metrics = loss_metrics or []
 
   def call(self,
            labels: tf.Tensor,
@@ -102,6 +105,10 @@ class Ranking(tf.keras.layers.Layer, base.Task):
     for metric in self._label_metrics:
       update_ops.append(
           metric.update_state(labels, sample_weight=sample_weight))
+
+    for metric in self._loss_metrics:
+      update_ops.append(
+          metric.update_state(loss, sample_weight=sample_weight))
 
     with tf.control_dependencies(update_ops):
       return tf.identity(loss)

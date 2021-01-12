@@ -1,4 +1,4 @@
-# Copyright 2020 The TensorFlow Recommenders Authors.
+# Copyright 2021 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,8 +43,8 @@ setuptools.setup(
         "docs": [
             "fire",
             "annoy",
-            "scann == 1.1.1",
-            "tensorflow == 2.3, < 2.4",],
+            "scann == 1.2.0",
+            "tensorflow == 2.4",],
     },
     # PyPI package information.
     classifiers=[

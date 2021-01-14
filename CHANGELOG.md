@@ -6,6 +6,8 @@
 
 -   `TopK` layers now come with a `query_with_exclusions` method, allowing
     certain candidates to be excluded from top-k retrieval.
+-   `TPUEmbedding` Keras layer for accelerating embedding lookups for large
+    tables with TPU.
 
 ### Changed
 

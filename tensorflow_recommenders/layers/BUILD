@@ -17,6 +17,7 @@ py_library(
         ":dcn",
         ":factorized_top_k",
         ":loss",
+        "//tensorflow_recommenders/layers/embedding",
     ],
 )
 

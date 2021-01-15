@@ -16,5 +16,6 @@
 """Layers."""
 
 from tensorflow_recommenders.layers import dcn
+from tensorflow_recommenders.layers import embedding
 from tensorflow_recommenders.layers import factorized_top_k
 from tensorflow_recommenders.layers import loss

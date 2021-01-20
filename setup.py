@@ -17,11 +17,11 @@
 import pathlib
 import setuptools
 
-VERSION = "0.3.2"
+VERSION = "0.4.0"
 
 REQUIRED_PACKAGES = [
     "absl-py >= 0.1.6",
-    "tensorflow >= 2.3",
+    "tensorflow == 2.4",
 ]
 
 long_description = (pathlib.Path(__file__).parent
@@ -44,7 +44,7 @@ setuptools.setup(
             "fire",
             "annoy",
             "scann == 1.2.0",
-            "tensorflow == 2.4",],
+        ],
     },
     # PyPI package information.
     classifiers=[

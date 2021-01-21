@@ -154,4 +154,4 @@ class SamplingProbablityCorrection(tf.keras.layers.Layer):
                candidate_sampling_probability: tf.Tensor) -> tf.Tensor:
     """Corrects the input logits to account for candidate sampling probability."""
 
-    return logits + tf.math.log(candidate_sampling_probability)
+    return logits - tf.math.log(candidate_sampling_probability)

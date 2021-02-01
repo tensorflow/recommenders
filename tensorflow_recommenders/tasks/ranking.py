@@ -110,5 +110,9 @@ class Ranking(tf.keras.layers.Layer, base.Task):
       update_ops.append(
           metric.update_state(loss, sample_weight=sample_weight))
 
+    # Custom metrics may not return update ops, unlike built-in
+    # Keras metrics.
+    update_ops = [x for x in update_ops if x is not None]
+
     with tf.control_dependencies(update_ops):
       return tf.identity(loss)

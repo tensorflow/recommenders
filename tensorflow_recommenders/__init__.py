@@ -24,10 +24,12 @@ you the flexibility to build complex models.
 __version__ = "v0.4.0"
 
 from tensorflow_recommenders import examples
+from tensorflow_recommenders import experimental
 # Internal extension library import.
 from tensorflow_recommenders import layers
 from tensorflow_recommenders import metrics
 from tensorflow_recommenders import models
 from tensorflow_recommenders import tasks
+
 
 Model = models.Model

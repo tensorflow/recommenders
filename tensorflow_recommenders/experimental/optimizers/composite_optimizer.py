@@ -15,14 +15,16 @@
 """Composite Optimizer."""
 
 import collections
-from typing import Callable, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import tensorflow as tf
 
 Tensor = Union[tf.Tensor, tf.SparseTensor, tf.RaggedTensor]
 
 
-class CompositeOptimizer(tf.keras.optimizers.Optimizer):
+# We need to inherit from `tf.Module` as well to get recursive variable tracking
+# into the suboptimizers.
+class CompositeOptimizer(tf.keras.optimizers.Optimizer, tf.Module):
   """An optimizer that composes multiple individual optimizers.
 
   It allows different optimizers to be applied to different subsets of the
@@ -100,3 +102,18 @@ class CompositeOptimizer(tf.keras.optimizers.Optimizer):
     """See base class."""
     for optimizer, _ in self._optimizers_and_vars:
       optimizer.iterations = variable
+
+  def variables(self) -> List[tf.Variable]:
+    """Returns the optimizer's variables."""
+
+    variables = []
+
+    for optimizer, _ in self._optimizers_and_vars:
+      variables += optimizer.variables()
+
+    return variables
+
+  @property
+  def weights(self) -> List[tf.Variable]:
+    """Returns the optimizer's variables."""
+    return self.variables()

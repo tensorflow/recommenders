@@ -14,9 +14,8 @@
 
 """Tests for CompositeOptimizer."""
 
-import unittest
-
 from absl.testing import parameterized
+import numpy as np
 import tensorflow as tf
 
 from tensorflow_recommenders.experimental.optimizers.composite_optimizer import CompositeOptimizer
@@ -101,54 +100,60 @@ class CompositOptimizerTest(tf.test.TestCase, parameterized.TestCase):
     with self.assertRaises(ValueError):
       composite_optimizer.apply_gradients(grads_and_vars)
 
-  # TODO(agagik) Need to remove expectedFailure after fixing CompositeOptimizer
-  # to restore optimizer.iteration steps are restoreing a model from checkpoint.
-  @unittest.expectedFailure
   def test_checkpoint_save_restore(self):
     # Using a simple Linear model to test checkpoint save/restore.
-    model = tf.keras.experimental.LinearModel(units=10)
+    def get_model() -> tf.keras.Model:
+      model = tf.keras.experimental.LinearModel(units=10)
 
-    composite_optimizer = CompositeOptimizer([
-        (tf.keras.optimizers.Adam(), lambda: model.trainable_variables[:1]),
-        (tf.keras.optimizers.Adagrad(), lambda: model.trainable_variables[1:]),
-    ])
-
-    checkpoint = tf.train.Checkpoint(model=model,
-                                     optimizer=composite_optimizer)
-    model.compile(optimizer=composite_optimizer,
-                  loss=tf.keras.losses.MSE)
+      composite_optimizer = CompositeOptimizer([
+          (tf.keras.optimizers.Adam(),
+           lambda: model.trainable_variables[:1]),
+          (tf.keras.optimizers.Adagrad(),
+           lambda: model.trainable_variables[1:]),
+      ])
+      model.compile(optimizer=composite_optimizer,
+                    loss=tf.keras.losses.MSE)
+      return model
 
     batch_size = 16
     num_of_batches = 8
+    rng = np.random.RandomState(42)
 
-    x = tf.ones((num_of_batches * batch_size, 5))
-    y = tf.zeros((num_of_batches * batch_size, 1))
+    x = rng.normal(size=(num_of_batches * batch_size, 5))
+    y = rng.normal(size=(num_of_batches * batch_size, 1))
     training_dataset = tf.data.Dataset.from_tensor_slices((x, y))
     training_dataset = training_dataset.batch(batch_size)
 
+    model = get_model()
     model.fit(training_dataset, epochs=1)
 
     # Check that optimizer iterations matches dataset size.
-    self.assertEqual(composite_optimizer.iterations.numpy(), num_of_batches)
+    self.assertEqual(model.optimizer.iterations.numpy(), num_of_batches)
+    # Check that it has state for all the model's variables
+    self.assertLen(model.optimizer.variables(), 5)
 
     # Saving checkpoint.
+    checkpoint = tf.train.Checkpoint(model=model)
     checkpoint_path = self.get_temp_dir()
     checkpoint.write(checkpoint_path)
 
-    # Loading checkpoint after reinitializing the optimizer and checkpoint.
-    composite_optimizer = CompositeOptimizer([
-        (tf.keras.optimizers.Adam(), lambda: model.trainable_variables),
-        (tf.keras.optimizers.Adagrad(), lambda: []),
-    ])
+    # Restore to a fresh instance and check.
+    new_model = get_model()
+    # Run only one epoch: if the restore fails, we can tell
+    # by the number of iterations being 1 rather than `num_batches`.
+    new_model.fit(training_dataset.take(1))
 
-    checkpoint = tf.train.Checkpoint(model=model,
-                                     optimizer=composite_optimizer)
-
+    checkpoint = tf.train.Checkpoint(model=new_model)
     checkpoint.read(checkpoint_path).assert_consumed()
 
     # After restoring the checkpoint, optimizer iterations should also be
-    # restored to its original value. Right now this assertion is failing.
-    self.assertEqual(composite_optimizer.iterations.numpy(), num_of_batches)
+    # restored to its original value.
+    self.assertEqual(new_model.optimizer.iterations.numpy(), num_of_batches)
+    # As should the rest of its variables.
+    self.assertAllClose(
+        new_model.optimizer.variables(),
+        model.optimizer.variables()
+    )
 
 
 if __name__ == "__main__":

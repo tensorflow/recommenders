@@ -36,6 +36,7 @@ py_test(
     deps = [
         ":composite_optimizer",
         # py/absl/testing:parameterized dep,
+        # py/numpy dep,
         # py/tensorflow dep,
     ],
 )

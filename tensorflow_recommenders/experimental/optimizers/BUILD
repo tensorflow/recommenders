@@ -1,4 +1,4 @@
-load("//devtools/python/blaze:pytype.bzl", "py_library", "pytype_library")
+# Placeholder for internal Python library.
 # Placeholder for internal Python test library.
 
 licenses(["notice"])
@@ -17,7 +17,7 @@ py_library(
     ],
 )
 
-pytype_library(
+py_library(
     name = "composite_optimizer",
     srcs = ["composite_optimizer.py"],
     srcs_version = "PY3",

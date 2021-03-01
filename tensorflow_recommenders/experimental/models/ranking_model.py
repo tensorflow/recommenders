@@ -22,7 +22,7 @@ import tensorflow as tf
 
 from tensorflow_recommenders import models
 from tensorflow_recommenders import tasks
-from tensorflow_recommenders.layers.embedding import TPUEmbedding
+from tensorflow_recommenders.layers import embedding
 
 
 class DotInteraction(tf.keras.layers.Layer):
@@ -200,7 +200,8 @@ class RankingModel(models.Model):
     if not emb_optimizer:
       emb_optimizer = tf.keras.optimizers.Adam()
 
-    self._tpu_embeddings = TPUEmbedding(emb_feature_config, emb_optimizer)
+    self._tpu_embeddings = embedding.TPUEmbedding(
+        emb_feature_config, emb_optimizer)
 
     self._bottom_stack = bottom_stack if bottom_stack else MlpBlock(
         units=[256, 64, embedding_dim], out_activation="relu")

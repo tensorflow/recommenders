@@ -547,6 +547,16 @@ class ScaNN(TopK):
   This layer uses the state-of-the-art
   [ScaNN](https://github.com/google-research/google-research/tree/master/scann)
   library to retrieve the best candidates for a given query.
+
+  To understand how to use this layer effectively, have a look at the efficient
+  retrieval
+  [tutorial](https://www.tensorflow.org/recommenders/examples/efficient_serving).
+
+  To deploy this layer in TensorFlow Serving you can use our customized
+  TensorFlow Serving Docker container, available on
+  [Docker Hub](https://hub.docker.com/r/google/tf-serving-scann). You can also
+  build the image yourself from the
+  [Dockerfile](https://github.com/google-research/google-research/tree/master/scann/tf_serving).
   """
 
   def __init__(self,
@@ -591,8 +601,7 @@ class ScaNN(TopK):
     if not _HAVE_SCANN:
       raise ImportError(
           "The scann library is not present. Please install it using "
-          "`pip install scann` to use the ScaNN layer."
-      )
+          "`pip install scann` to use the ScaNN layer.")
 
     self.query_model = query_model
     self._k = k

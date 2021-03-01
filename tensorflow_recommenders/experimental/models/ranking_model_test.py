@@ -18,9 +18,7 @@ from typing import List
 
 import tensorflow as tf
 
-from tensorflow_recommenders.experimental.models.ranking_model import DotInteraction
-from tensorflow_recommenders.experimental.models.ranking_model import MlpBlock
-from tensorflow_recommenders.experimental.models.ranking_model import RankingModel
+import tensorflow_recommenders as tfrs
 
 
 def _generate_synthetic_data(num_dense: int,
@@ -74,12 +72,18 @@ class RankingModelTest(tf.test.TestCase):
 
     vocab_sizes = [100, 26]
 
-    model = RankingModel(
+    model = tfrs.experimental.models.RankingModel(
         vocab_sizes=vocab_sizes,
         embedding_dim=20,
-        bottom_stack=MlpBlock(units_list=[100, 20], out_activation="relu"),
-        feature_interaction=DotInteraction(),
-        top_stack=MlpBlock(units_list=[40, 20, 1], out_activation="sigmoid"),
+        bottom_stack=tfrs.experimental.models.MlpBlock(
+            units=[100, 20],
+            out_activation="relu"
+        ),
+        feature_interaction=tfrs.experimental.models.DotInteraction(),
+        top_stack=tfrs.experimental.models.MlpBlock(
+            units=[40, 20, 1],
+            out_activation="sigmoid"
+        ),
         emb_optimizer=optimizer,
     )
     model.compile(optimizer,

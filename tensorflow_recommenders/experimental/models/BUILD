@@ -37,9 +37,8 @@ py_test(
     python_version = "PY3",
     srcs_version = "PY3",
     deps = [
-        ":ranking_model",
         # py/absl/testing:parameterized dep,
         # py/tensorflow dep,
-        "//tensorflow_recommenders/tasks",
+        "//tensorflow_recommenders",
     ],
 )

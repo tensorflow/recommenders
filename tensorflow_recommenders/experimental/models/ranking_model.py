@@ -20,9 +20,9 @@ from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import tensorflow as tf
 
+from tensorflow_recommenders import models
+from tensorflow_recommenders import tasks
 from tensorflow_recommenders.layers.embedding import TPUEmbedding
-import tensorflow_recommenders.models
-import tensorflow_recommenders.tasks
 
 
 class DotInteraction(tf.keras.layers.Layer):
@@ -92,7 +92,7 @@ class MlpBlock(tf.keras.layers.Layer):
   """Constructs a sequential multi-layer perceptron (MLP) block."""
 
   def __init__(self,
-               units_list: List[int],
+               units: List[int],
                use_bias: bool = True,
                activation: Union[Callable[[tf.Tensor], tf.Tensor], str,
                                  None] = "relu",
@@ -102,7 +102,7 @@ class MlpBlock(tf.keras.layers.Layer):
     """Initializes the MLP layer.
 
     Args:
-      units_list: Sequential list of layer sizes.
+      units: Sequential list of layer sizes.
       use_bias: Whether to include a bias term.
       activation: Type of activation to use on all except the last layer.
       out_activation: Type of activation to use on last layer.
@@ -113,13 +113,13 @@ class MlpBlock(tf.keras.layers.Layer):
 
     self._layers = []
 
-    for units in units_list[:-1]:
+    for num_units in units[:-1]:
       self._layers.append(
           tf.keras.layers.Dense(
-              units, activation=activation, use_bias=use_bias))
+              num_units, activation=activation, use_bias=use_bias))
     self._layers.append(
         tf.keras.layers.Dense(
-            units_list[-1], activation=out_activation, use_bias=use_bias))
+            units[-1], activation=out_activation, use_bias=use_bias))
 
   def call(self, x: tf.Tensor) -> tf.Tensor:
     for layer in self._layers:
@@ -157,7 +157,7 @@ def _get_tpu_embedding_feature_config(
   return feature_config
 
 
-class RankingModel(tensorflow_recommenders.models.Model):
+class RankingModel(models.Model):
   """Keras model definition for the Ranking model.
 
   For DLRM model DotInteraction is used.
@@ -176,7 +176,9 @@ class RankingModel(tensorflow_recommenders.models.Model):
     top_stack: The `top_stack` layer is applied to the `feature_interaction`
       output. The output of top_stack should be in the range [0, 1]. If it is
       None MLP with layer sizes [512, 256, 1] is used.
-    loss: Loss function. Defaults to BinaryCrossentropy.
+    task: The task the model should optimize for. Defaults to a
+      `tfrs.tasks.Ranking` task with a binary cross-entropy loss, suitable
+      for tasks like click prediction.
   """
 
   def __init__(
@@ -187,9 +189,9 @@ class RankingModel(tensorflow_recommenders.models.Model):
       bottom_stack: Optional[tf.keras.layers.Layer] = None,
       feature_interaction: Optional[tf.keras.layers.Layer] = None,
       top_stack: Optional[tf.keras.layers.Layer] = None,
-      loss: Optional[tf.keras.losses.Loss] = None) -> None:
+      task: Optional[tasks.Task] = None) -> None:
 
-    super(RankingModel, self).__init__()
+    super().__init__()
 
     emb_feature_config = _get_tpu_embedding_feature_config(
         vocab_sizes=vocab_sizes,
@@ -201,27 +203,30 @@ class RankingModel(tensorflow_recommenders.models.Model):
     self._tpu_embeddings = TPUEmbedding(emb_feature_config, emb_optimizer)
 
     self._bottom_stack = bottom_stack if bottom_stack else MlpBlock(
-        units_list=[256, 64, embedding_dim], out_activation="relu")
+        units=[256, 64, embedding_dim], out_activation="relu")
     self._top_stack = top_stack if top_stack else MlpBlock(
-        units_list=[512, 256, 1], out_activation="sigmoid")
+        units=[512, 256, 1], out_activation="sigmoid")
     self._feature_interaction = (feature_interaction if feature_interaction
                                  else DotInteraction())
 
-    loss = loss if loss else tf.keras.losses.BinaryCrossentropy(
-        reduction=tf.losses.Reduction.NONE)
-
-    self._ctr_task = tensorflow_recommenders.tasks.Ranking(
-        name="ctr",
-        loss=loss,
-        metrics=[
-            tf.keras.metrics.AUC(name="auc"),
-            tf.keras.metrics.BinaryAccuracy(name="accuracy"),
-        ],
-        prediction_metrics=[
-            tf.keras.metrics.Mean("prediction_mean"),
-        ],
-        label_metrics=[tf.keras.metrics.Mean("label_mean")],
-    )
+    if task is not None:
+      self._task = task
+    else:
+      self._task = tasks.Ranking(
+          loss=tf.keras.losses.BinaryCrossentropy(
+              reduction=tf.keras.losses.Reduction.NONE
+          ),
+          metrics=[
+              tf.keras.metrics.AUC(name="auc"),
+              tf.keras.metrics.BinaryAccuracy(name="accuracy"),
+          ],
+          prediction_metrics=[
+              tf.keras.metrics.Mean("prediction_mean"),
+          ],
+          label_metrics=[
+              tf.keras.metrics.Mean("label_mean")
+          ]
+      )
 
   def compute_loss(self,
                    inputs: Tuple[Dict[str, tf.Tensor], tf.Tensor],
@@ -237,13 +242,16 @@ class RankingModel(tensorflow_recommenders.models.Model):
     Returns:
       Loss tensor.
     """
-    inputs, labels = inputs
-    outputs = self(inputs, training=training)
-    loss = self._ctr_task(labels, outputs)
+
+    features, labels = inputs
+    outputs = self(features, training=training)
+
+    loss = self._task(labels, outputs)
     loss = tf.reduce_mean(loss)
     # Scales loss as the default gradients allreduce performs sum inside the
     # optimizer.
     scaled_loss = loss / tf.distribute.get_strategy().num_replicas_in_sync
+
     return scaled_loss
 
   def call(self, inputs: Dict[str, tf.Tensor]) -> tf.Tensor:

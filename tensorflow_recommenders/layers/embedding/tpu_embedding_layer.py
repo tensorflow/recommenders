@@ -330,18 +330,20 @@ class TPUEmbedding(tf.keras.layers.Layer):
   strategy = tf.distribute.TPUStrategy(...)
   with strategy.scope():
     embedding_inputs = {
-        'feature_one': tf.keras.Input(batch_size=1024, shape=(),
+        'feature_one': tf.keras.Input(batch_size=1024, shape=(1,),
                                       dtype=tf.int32),
-        'feature_two': tf.keras.Input(batch_size=1024, shape=(),
+        'feature_two': tf.keras.Input(batch_size=1024, shape=(1,),
                                       dtype=tf.int32, ragged=True),
-        'feature_three': tf.keras.Input(batch_size=1024, shape=(),
+        'feature_three': tf.keras.Input(batch_size=1024, shape=(1,),
                                         dtype=tf.int32)}
     # embedding, feature_config and embedding_inputs all have the same nested
     # structure.
     embedding = tpu_embedding_layer.TPUEmbedding(
         feature_config=feature_config,
         optimizer=tf.tpu.experimental.embedding.SGD(0.1))(embedding_inputs)
-    logits = tf.keras.layers.Dense(1)(tf.concat(tf.nest.flatten(embedding)))
+    logits = tf.keras.layers.Dense(1)(
+        tf.concat(tf.nest.flatten(embedding), axis=1)
+    )
     model = tf.keras.Model(embedding_inputs, logits)
   ```
 
@@ -350,13 +352,16 @@ class TPUEmbedding(tf.keras.layers.Layer):
   ```python
   class ModelWithEmbeddings(tf.keras.Model):
     def __init__(self):
+      super(ModelWithEmbeddings, self).__init__()
       self.embedding_layer = tpu_embedding_layer.TPUEmbedding(
           feature_config=feature_config,
           optimizer=tf.tpu.experimental.embedding.SGD(0.1))
+      self.dense = tf.keras.layers.Dense(1)
 
     def call(self, inputs):
       embedding = self.embedding_layer(inputs)
-      logits = tf.keras.layers.Dense(1)(tf.concat(tf.nest.flatten(embedding)))
+      logits = self.dense(tf.concat(tf.nest.flatten(embedding), axis=1))
+      return logits
 
   with strategy.scope():
     model = ModelWithEmbeddings()

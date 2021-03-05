@@ -34,6 +34,15 @@ def variable_creation_fn(name, shape, initializer, trainable, dtype):
                      trainable=trainable)
 
 
+def create_distribute_input_option():
+  # Add a try...except block as OSS tensorflow_recommenders is depending on
+  # stable TF version, i.e. TF2.4.
+  try:
+    return tf.distribute.InputOptions(experimental_fetch_to_device=False)
+  except TypeError:
+    return tf.distribute.InputOptions(experimental_prefetch_to_device=False)
+
+
 class TPUEmbeddingLayerTest(parameterized.TestCase, tf.test.TestCase):
 
   def setUp(self):
@@ -160,9 +169,7 @@ class TPUEmbeddingLayerTest(parameterized.TestCase, tf.test.TestCase):
     else:
       dataset = self._create_ragged_dataset(strategy)
     dist = strategy.experimental_distribute_dataset(
-        dataset,
-        options=tf.distribute.InputOptions(
-            experimental_prefetch_to_device=False))
+        dataset, options=create_distribute_input_option())
     dist_iter = iter(dist)
 
     @tf.function

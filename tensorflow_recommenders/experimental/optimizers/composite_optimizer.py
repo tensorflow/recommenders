@@ -22,9 +22,7 @@ import tensorflow as tf
 Tensor = Union[tf.Tensor, tf.SparseTensor, tf.RaggedTensor]
 
 
-# We need to inherit from `tf.Module` as well to get recursive variable tracking
-# into the suboptimizers.
-class CompositeOptimizer(tf.keras.optimizers.Optimizer, tf.Module):
+class CompositeOptimizer(tf.keras.optimizers.Optimizer):
   """An optimizer that composes multiple individual optimizers.
 
   It allows different optimizers to be applied to different subsets of the
@@ -60,6 +58,9 @@ class CompositeOptimizer(tf.keras.optimizers.Optimizer, tf.Module):
     if not optimizers_and_vars:
       raise ValueError("`optimizers_and_vars` can't be empty")
     self._optimizers_and_vars = optimizers_and_vars
+    for i, optimizer_and_var in enumerate(optimizers_and_vars):
+      optimizer = optimizer_and_var[0]
+      self._track_trackable(optimizer, name=f"Optimizer{i}")
 
   def apply_gradients(self, grads_and_vars: Sequence[Tuple[Tensor, Tensor]],
                       name: Optional[str] = None) -> None:
@@ -103,17 +104,16 @@ class CompositeOptimizer(tf.keras.optimizers.Optimizer, tf.Module):
     for optimizer, _ in self._optimizers_and_vars:
       optimizer.iterations = variable
 
-  def variables(self) -> List[tf.Variable]:
+  def variables(self):
     """Returns the optimizer's variables."""
-
-    variables = []
-
-    for optimizer, _ in self._optimizers_and_vars:
-      variables += optimizer.variables()
-
-    return variables
+    # OptimizerV2.variables() returns self._weights, so override that method.
+    return self.weights
 
   @property
   def weights(self) -> List[tf.Variable]:
     """Returns the optimizer's variables."""
-    return self.variables()
+    weights = []
+    for optimizer, _ in self._optimizers_and_vars:
+      weights += optimizer.weights
+    return weights
+

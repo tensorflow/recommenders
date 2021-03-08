@@ -13,15 +13,18 @@
 # limitations under the License.
 
 """Tests for CompositeOptimizer."""
+import os.path
+import tempfile
 
 from absl.testing import parameterized
+
 import numpy as np
 import tensorflow as tf
 
 from tensorflow_recommenders.experimental.optimizers.composite_optimizer import CompositeOptimizer
 
 
-class CompositOptimizerTest(tf.test.TestCase, parameterized.TestCase):
+class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
 
   @parameterized.parameters(
       ("sgd", "adam"),
@@ -100,8 +103,8 @@ class CompositOptimizerTest(tf.test.TestCase, parameterized.TestCase):
     with self.assertRaises(ValueError):
       composite_optimizer.apply_gradients(grads_and_vars)
 
-  def test_checkpoint_save_restore(self):
-    # Using a simple Linear model to test checkpoint save/restore.
+  def test_checkpoint_save_restore_export(self):
+    # Using a simple Linear model to test checkpoint save/restore/export.
     def get_model() -> tf.keras.Model:
       model = tf.keras.experimental.LinearModel(units=10)
 
@@ -154,6 +157,21 @@ class CompositOptimizerTest(tf.test.TestCase, parameterized.TestCase):
         new_model.optimizer.variables(),
         model.optimizer.variables()
     )
+
+    model_pred = new_model.predict(training_dataset)
+
+    with tempfile.TemporaryDirectory() as tmp:
+      path = os.path.join(tmp, "model_with_composite_optimizer")
+      new_model.save(
+          path,
+          include_optimizer=False,
+          options=tf.saved_model.SaveOptions(namespace_whitelist=["Addons"]))
+      loaded_model = tf.keras.models.load_model(path)
+      loaded_pred = loaded_model.predict(training_dataset)
+
+    self.assertEqual(
+        model.layers[0].get_config(), loaded_model.layers[0].get_config())
+    self.assertAllEqual(model_pred, loaded_pred)
 
 
 if __name__ == "__main__":

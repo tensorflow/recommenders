@@ -131,6 +131,9 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     labels = tf.eye(num_queries, num_candidates)
 
+    if self._temperature is not None:
+      scores = scores / self._temperature
+
     if candidate_sampling_probability is not None:
       scores = layers.loss.SamplingProbablityCorrection()(
           scores, candidate_sampling_probability)
@@ -142,9 +145,6 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       scores, labels = layers.loss.HardNegativeMining(self._num_hard_negatives)(
           scores,
           labels)
-
-    if self._temperature is not None:
-      scores = scores / self._temperature
 
     loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)
 

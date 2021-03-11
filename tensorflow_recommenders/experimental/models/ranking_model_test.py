@@ -16,6 +16,8 @@
 
 from typing import List
 
+from absl.testing import parameterized
+
 import tensorflow as tf
 
 import tensorflow_recommenders as tfrs
@@ -25,7 +27,8 @@ def _generate_synthetic_data(num_dense: int,
                              vocab_sizes: List[int],
                              dataset_size: int,
                              is_training: bool,
-                             batch_size: int) -> tf.data.Dataset:
+                             batch_size: int,
+                             generate_weights: bool = False) -> tf.data.Dataset:
   dense_tensor = tf.random.uniform(
       shape=(dataset_size, num_dense), maxval=1.0, dtype=tf.float32)
 
@@ -52,10 +55,21 @@ def _generate_synthetic_data(num_dense: int,
   # Using the threshold 0.5 to convert to 0/1 labels.
   label_tensor = tf.cast(label_tensor + 0.5, tf.int32)
 
-  input_elem = {
-      "dense_features": dense_tensor,
-      "sparse_features": sparse_tensor_elements
-  }, label_tensor
+  if generate_weights:
+    weights = tf.random.uniform(shape=(dataset_size, 1))
+
+    input_elem = (
+        {"dense_features": dense_tensor,
+         "sparse_features": sparse_tensor_elements},
+        label_tensor,
+        weights
+    )
+  else:
+    input_elem = (
+        {"dense_features": dense_tensor,
+         "sparse_features": sparse_tensor_elements},
+        label_tensor,
+    )
 
   dataset = tf.data.Dataset.from_tensor_slices(input_elem)
   if is_training:
@@ -64,9 +78,10 @@ def _generate_synthetic_data(num_dense: int,
   return dataset.batch(batch_size, drop_remainder=True)
 
 
-class RankingModelTest(tf.test.TestCase):
+class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
 
-  def test_ranking_model(self):
+  @parameterized.parameters(True, False)
+  def test_ranking_model(self, use_weights):
     """Tests a ranking model."""
     optimizer = tf.keras.optimizers.Adam()
 
@@ -94,14 +109,18 @@ class RankingModelTest(tf.test.TestCase):
         vocab_sizes=vocab_sizes,
         dataset_size=1024,
         is_training=True,
-        batch_size=16)
+        batch_size=16,
+        generate_weights=use_weights
+    )
 
     eval_dataset = _generate_synthetic_data(
         num_dense=8,
         vocab_sizes=vocab_sizes,
         dataset_size=256,
         is_training=False,
-        batch_size=16)
+        batch_size=16,
+        generate_weights=use_weights
+    )
 
     model.fit(train_dataset,
               epochs=2,

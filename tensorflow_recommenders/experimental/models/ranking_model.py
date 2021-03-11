@@ -16,7 +16,7 @@
 
 
 import math
-from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import cast, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import tensorflow as tf
 
@@ -230,24 +230,73 @@ class RankingModel(models.Model):
       )
 
   def compute_loss(self,
-                   inputs: Tuple[Dict[str, tf.Tensor], tf.Tensor],
+                   inputs: Union[
+                       # Tuple of (features, labels).
+                       Tuple[
+                           Dict[str, tf.Tensor],
+                           tf.Tensor
+                       ],
+                       # Tuple of (features, labels, sample weights).
+                       Tuple[
+                           Dict[str, tf.Tensor],
+                           tf.Tensor,
+                           Optional[tf.Tensor]
+                       ]
+                   ],
                    training: bool = False) -> tf.Tensor:
-    """Defines the loss function.
+    """Computes the loss and metrics of the model.
 
     Args:
       inputs: A data structure of tensors of the following format:
         ({"dense_features": dense_tensor,
-        "sparse_features": sparse_tensors}, label_tensor)
+          "sparse_features": sparse_tensors},
+          label_tensor), or
+        ({"dense_features": dense_tensor,
+          "sparse_features": sparse_tensors},
+          label_tensor,
+          sample_weight tensor).
       training: Whether the model is in training mode.
 
     Returns:
       Loss tensor.
+
+    Raises:
+      ValueError if the the shape of the inputs is invalid.
     """
 
-    features, labels = inputs
+    # We need to work around a bug in mypy - tuple narrowing
+    # based on length checks doesn't work.
+    # See https://github.com/python/mypy/issues/1178 for details.
+    if len(inputs) == 2:
+      inputs = cast(
+          Tuple[
+              Dict[str, tf.Tensor],
+              tf.Tensor
+          ],
+          inputs
+      )
+      features, labels = inputs
+      sample_weight = None
+    elif len(inputs) == 3:
+      inputs = cast(
+          Tuple[
+              Dict[str, tf.Tensor],
+              tf.Tensor,
+              Optional[tf.Tensor],
+          ],
+          inputs
+      )
+      features, labels, sample_weight = inputs
+    else:
+      raise ValueError(
+          "Inputs should either be a tuple of (features, labels), "
+          "or a tuple of (features, labels, sample weights). "
+          "Got a length {len(inputs)} tuple instead: {inputs}."
+      )
+
     outputs = self(features, training=training)
 
-    loss = self._task(labels, outputs)
+    loss = self._task(labels, outputs, sample_weight=sample_weight)
     loss = tf.reduce_mean(loss)
     # Scales loss as the default gradients allreduce performs sum inside the
     # optimizer.

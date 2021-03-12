@@ -21,7 +21,7 @@ VERSION = "0.4.0"
 
 REQUIRED_PACKAGES = [
     "absl-py >= 0.1.6",
-    "tensorflow == 2.4",
+    "tensorflow == 2.4.*",
 ]
 
 long_description = (pathlib.Path(__file__).parent

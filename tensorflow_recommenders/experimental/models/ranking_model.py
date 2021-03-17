@@ -23,69 +23,7 @@ import tensorflow as tf
 from tensorflow_recommenders import models
 from tensorflow_recommenders import tasks
 from tensorflow_recommenders.layers import embedding
-
-
-class DotInteraction(tf.keras.layers.Layer):
-  """Dot interaction layer.
-
-  See theory in the DLRM paper: https://arxiv.org/pdf/1906.00091.pdf,
-  section 2.1.3. Sparse activations and dense activations are combined.
-  Dot interaction is applied to a batch of input Tensors [e1,...,e_k] of the
-  same dimension and the output is a batch of Tensors with all distinct pairwise
-  dot products of the form dot(e_i, e_j) for i <= j if self self_interaction is
-  True, otherwise dot(e_i, e_j) i < j.
-  TODO(agagik): Move all layers to their own module.
-
-  Attributes:
-    self_interaction: Boolean indicating if features should self-interact.
-      If it is True, then the diagonal enteries of the interaction matric are
-      also taken.
-    name: String name of the layer.
-  """
-
-  def __init__(self,
-               self_interaction: bool = False,
-               name: Optional[str] = None,
-               **kwargs) -> None:
-    self._self_interaction = self_interaction
-    super().__init__(name=name, **kwargs)
-
-  def call(self, inputs: List[tf.Tensor]) -> tf.Tensor:
-    """Performs the interaction operation on the tensors in the list.
-
-    The tensors represent dense and sparse features.
-    Pre-condition: The tensors should all have the same shape.
-
-    Args:
-      inputs: List of features with shape [batch_size, feature_dim].
-
-    Returns:
-      activations: Tensor representing interacted features.
-    """
-    batch_size = tf.shape(inputs[0])[0]
-    # concat_features shape: B,num_features,feature_width
-    try:
-      concat_features = tf.stack(inputs, axis=1)
-    except ValueError as e:
-      raise ValueError(f"Input tensors` dimensions must be equal, original"
-                       f"error message: {e}")
-
-    # Interact features, select lower-triangular portion, and re-shape.
-    xactions = tf.matmul(concat_features, concat_features, transpose_b=True)
-    ones = tf.ones_like(xactions)
-    feature_dim = xactions.shape[-1]
-    if self._self_interaction:
-      # Selecting lower-triangular portion including the diagonal.
-      lower_tri_mask = tf.linalg.band_part(ones, -1, 0)
-      out_dim = feature_dim * (feature_dim + 1) // 2
-    else:
-      # Selecting lower-triangular portion not included the diagonal.
-      upper_tri_mask = tf.linalg.band_part(ones, 0, -1)
-      lower_tri_mask = ones - upper_tri_mask
-      out_dim = feature_dim * (feature_dim - 1) // 2
-    activations = tf.boolean_mask(xactions, lower_tri_mask)
-    activations = tf.reshape(activations, (batch_size, out_dim))
-    return activations
+from tensorflow_recommenders.layers import feature_interaction as feature_interaction_lib
 
 
 class MlpBlock(tf.keras.layers.Layer):
@@ -160,7 +98,11 @@ def _get_tpu_embedding_feature_config(
 class RankingModel(models.Model):
   """Keras model definition for the Ranking model.
 
-  For DLRM model DotInteraction is used.
+  Layers of Ranking model can be customized as needed. For example we can use
+  feature_interaction = tfrs.layers.feature_interaction.DotInteraction() is
+  for DLRM model and use feature_interaction = tf.keras.Sequential(
+  [tf.keras.layers.Concatenate(), tfrs.layers.feature_interaction.Cross()])
+  for DCN network.
 
   Attributes:
     vocab_sizes: List of ints, vocab sizes of the sparse features.
@@ -208,7 +150,7 @@ class RankingModel(models.Model):
     self._top_stack = top_stack if top_stack else MlpBlock(
         units=[512, 256, 1], out_activation="sigmoid")
     self._feature_interaction = (feature_interaction if feature_interaction
-                                 else DotInteraction())
+                                 else feature_interaction_lib.DotInteraction())
 
     if task is not None:
       self._task = task

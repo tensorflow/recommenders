@@ -80,8 +80,15 @@ def _generate_synthetic_data(num_dense: int,
 
 class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
 
-  @parameterized.parameters(True, False)
-  def test_ranking_model(self, use_weights):
+  @parameterized.parameters(
+      (tfrs.layers.feature_interaction.DotInteraction(), True),
+      (tfrs.layers.feature_interaction.DotInteraction(), False),
+      (tf.keras.Sequential([tf.keras.layers.Concatenate(),
+                            tfrs.layers.feature_interaction.Cross()]), True),
+      (tf.keras.Sequential([tf.keras.layers.Concatenate(),
+                            tfrs.layers.feature_interaction.Cross()]), False),
+      )
+  def test_ranking_model(self, feature_interaction_layer, use_weights=False):
     """Tests a ranking model."""
     optimizer = tf.keras.optimizers.Adam()
 
@@ -91,10 +98,8 @@ class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
         vocab_sizes=vocab_sizes,
         embedding_dim=20,
         bottom_stack=tfrs.experimental.models.MlpBlock(
-            units=[100, 20],
-            out_activation="relu"
-        ),
-        feature_interaction=tfrs.experimental.models.DotInteraction(),
+            units=[100, 20], out_activation="relu"),
+        feature_interaction=feature_interaction_layer,
         top_stack=tfrs.experimental.models.MlpBlock(
             units=[40, 20, 1],
             out_activation="sigmoid"
@@ -123,6 +128,7 @@ class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
     )
 
     model.fit(train_dataset,
+              validation_data=eval_dataset,
               epochs=2,
               steps_per_epoch=100)
 

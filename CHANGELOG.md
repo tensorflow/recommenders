@@ -6,6 +6,13 @@
 
 -   Fixed the bug in `tfrs.layers.loss.SamplingProbablityCorrection` that logits
     should substract the log of item probability.
+-   `tfrs.experimental.models.RankingModel` can be used as DLRM like model with
+    Dot Product feature interaction or DCN like model with Cross layer.
+-   `tfrs.experimental.optimizers.CompositeOptimizer`: an optimizer that
+    composes multiple individual optimizers which can be applied to different
+    subsets of the model's variables.
+-   `tfrs.layers.dcn.Cross` and `DotInteraction` layers have been moved to
+    `tfrs.layers.feature_interaction` package.
 
 ## [0.4.0][2021-01-20]
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Experimental Models."""
+"""Feature Interaction layers."""
 
-from tensorflow_recommenders.experimental.models.ranking_model import MlpBlock
-from tensorflow_recommenders.experimental.models.ranking_model import RankingModel
+from tensorflow_recommenders.layers.feature_interaction.dcn import Cross
+from tensorflow_recommenders.layers.feature_interaction.dot_interaction import DotInteraction

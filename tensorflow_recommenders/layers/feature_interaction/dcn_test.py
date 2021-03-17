@@ -20,7 +20,7 @@ import tempfile
 import numpy as np
 import tensorflow as tf
 
-from tensorflow_recommenders.layers.dcn import Cross
+from tensorflow_recommenders.layers.feature_interaction.dcn import Cross
 
 
 class CrossTest(tf.test.TestCase):

@@ -24,6 +24,7 @@ py_library(
     deps = [
         # py/tensorflow dep,
         "//tensorflow_recommenders/layers/embedding",
+        "//tensorflow_recommenders/layers/feature_interaction",
         "//tensorflow_recommenders/models",
         "//tensorflow_recommenders/tasks",
     ],

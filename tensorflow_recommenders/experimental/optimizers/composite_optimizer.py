@@ -26,9 +26,9 @@ class CompositeOptimizer(tf.keras.optimizers.Optimizer):
   """An optimizer that composes multiple individual optimizers.
 
   It allows different optimizers to be applied to different subsets of the
-  model's variables. For example, it makes it possible to apply a different
-  optimizer to the model's embeddings (sparse variables) and a different
-  optimizer for the rest of its variables.
+  model's variables. For example, it makes it possible to apply one
+  optimizer to the model's embeddings (sparse variables) and another
+  optimizer to the rest of its variables.
 
   To specify which optimizer should apply to each variable, pass a list of
   pairs of (optimizer instance, function returning a list of variables the

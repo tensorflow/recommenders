@@ -62,7 +62,7 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
     grads_and_vars = list(zip([grads1, grads2, grads3], [var1, var2, var3]))
 
     for _ in range(10):
-      # Testing that when applying a coposite optimizer has the same effect as
+      # Test that applying a composite optimizer has the same effect as
       # applying optimizer1 and optimizer2 seperately on subset of gradients/
       # variables.
       composite_optimizer.apply_gradients(grads_and_vars)
@@ -81,7 +81,7 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
     grads2 = tf.constant([0.5, 0.0, -2.0])
     grads3 = tf.constant([-0.2, 0.0, -1.0])
 
-    # Test same variable in tow optimizers.
+    # Test same variable in two optimizers.
     composite_optimizer = CompositeOptimizer([
         (tf.keras.optimizers.Adam(), lambda: [var1]),
         (tf.keras.optimizers.Adagrad(), lambda: [var1, var2]),
@@ -104,7 +104,7 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
       composite_optimizer.apply_gradients(grads_and_vars)
 
   def test_checkpoint_save_restore_export(self):
-    # Using a simple Linear model to test checkpoint save/restore/export.
+    # Use a simple Linear model to test checkpoint save/restore/export.
     def get_model() -> tf.keras.Model:
       model = tf.keras.experimental.LinearModel(units=10)
 
@@ -130,12 +130,12 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
     model = get_model()
     model.fit(training_dataset, epochs=1)
 
-    # Check that optimizer iterations matches dataset size.
+    # Check that optimizer iterations match dataset size.
     self.assertEqual(model.optimizer.iterations.numpy(), num_of_batches)
     # Check that it has state for all the model's variables
     self.assertLen(model.optimizer.variables(), 5)
 
-    # Saving checkpoint.
+    # Save checkpoint.
     checkpoint = tf.train.Checkpoint(model=model)
     checkpoint_path = self.get_temp_dir()
     checkpoint.write(checkpoint_path)
@@ -152,7 +152,7 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
     # After restoring the checkpoint, optimizer iterations should also be
     # restored to its original value.
     self.assertEqual(new_model.optimizer.iterations.numpy(), num_of_batches)
-    # As should the rest of its variables.
+    # Same for the rest of its variables.
     self.assertAllClose(
         new_model.optimizer.variables(),
         model.optimizer.variables()

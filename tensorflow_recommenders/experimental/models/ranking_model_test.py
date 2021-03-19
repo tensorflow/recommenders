@@ -33,7 +33,7 @@ def _get_tpu_embedding_feature_config(
   Args:
     vocab_sizes: List of sizes of categories/id's in the table.
     embedding_dim: Embedding dimension.
-    table_name_prefix: a prefix for embedding tables.
+    table_name_prefix: A prefix for embedding tables.
   Returns:
     A dictionary of feature_name, FeatureConfig pairs.
   """
@@ -82,7 +82,7 @@ def _generate_synthetic_data(num_dense: int,
   sparse_tensors_mean /= sum(vocab_sizes)
   # The label is in [0, 1] interval.
   label_tensor = (dense_tensor_mean + sparse_tensors_mean) / 2.0
-  # Using the threshold 0.5 to convert to 0/1 labels.
+  # Use the threshold 0.5 to convert to 0/1 labels.
   label_tensor = tf.cast(label_tensor + 0.5, tf.int32)
 
   if generate_weights:
@@ -110,6 +110,17 @@ def _generate_synthetic_data(num_dense: int,
 
 class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
 
+  def setUp(self):
+    super().setUp()
+    self.optimizer = tf.keras.optimizers.Adam()
+    self.vocab_sizes = [100, 26]
+    embedding_dim = 20
+    emb_feature_config = _get_tpu_embedding_feature_config(
+        vocab_sizes=self.vocab_sizes,
+        embedding_dim=embedding_dim)
+    self.tpu_embedding = tfrs.layers.embedding.TPUEmbedding(
+        emb_feature_config, self.optimizer)
+
   @parameterized.parameters(
       (tfrs.layers.feature_interaction.DotInteraction(), True),
       (tfrs.layers.feature_interaction.DotInteraction(), False),
@@ -120,22 +131,8 @@ class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
       )
   def test_ranking_model(self, feature_interaction_layer, use_weights=False):
     """Tests a ranking model."""
-    optimizer = tf.keras.optimizers.Adam()
-
-    vocab_sizes = [100, 26]
-    embedding_dim = 20
-
-    emb_feature_config = _get_tpu_embedding_feature_config(
-        vocab_sizes=vocab_sizes,
-        embedding_dim=embedding_dim)
-
-    emb_optimizer = tf.keras.optimizers.Adam()
-
-    tpu_embedding = tfrs.layers.embedding.TPUEmbedding(
-        emb_feature_config, emb_optimizer)
-
     model = tfrs.experimental.models.RankingModel(
-        embedding_layer=tpu_embedding,
+        embedding_layer=self.tpu_embedding,
         bottom_stack=tfrs.experimental.models.MlpBlock(
             units=[100, 20], out_activation="relu"),
         feature_interaction=feature_interaction_layer,
@@ -144,12 +141,12 @@ class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
             out_activation="sigmoid"
         ),
     )
-    model.compile(optimizer,
+    model.compile(self.optimizer,
                   steps_per_execution=5)
 
     train_dataset = _generate_synthetic_data(
         num_dense=8,
-        vocab_sizes=vocab_sizes,
+        vocab_sizes=self.vocab_sizes,
         dataset_size=1024,
         is_training=True,
         batch_size=16,
@@ -158,7 +155,7 @@ class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
 
     eval_dataset = _generate_synthetic_data(
         num_dense=8,
-        vocab_sizes=vocab_sizes,
+        vocab_sizes=self.vocab_sizes,
         dataset_size=256,
         is_training=False,
         batch_size=16,

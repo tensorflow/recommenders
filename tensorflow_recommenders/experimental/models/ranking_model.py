@@ -68,7 +68,7 @@ class RankingModel(models.Model):
   """Keras model definition for the Ranking model.
 
   Layers of Ranking model can be customized as needed. For example we can use
-  feature_interaction = tfrs.layers.feature_interaction.DotInteraction() is
+  feature_interaction = tfrs.layers.feature_interaction.DotInteraction()
   for DLRM model and use feature_interaction = tf.keras.Sequential(
   [tf.keras.layers.Concatenate(), tfrs.layers.feature_interaction.Cross()])
   for DCN network.
@@ -76,20 +76,20 @@ class RankingModel(models.Model):
   Attributes:
     embedding_layer: The embedding layer is applied to the categorical features.
       It expects a string-to-tensor (or SparseTensor/RaggedTensor) dictionary as
-      an input and outputs a dictionary of string-to-tensor of feature_name,
+      an input, and outputs a dictionary of string-to-tensor of feature_name,
       embedded_value pairs.
       {feature_name_i: tensor_i} -> {feature_name_i: emb(tensor_i)}.
     bottom_stack: The `bottom_stack` layer is applied to dense features before
       feature interaction. If it is None, MLP with layer sizes [256, 64, 16] is
-      used. For DLRM model the output of bottom_stack should of shape
+      used. For DLRM model, the output of bottom_stack should be of shape
       (batch_size, embedding dimension).
     feature_interaction: Feature interaction layer is applied to the
-      `bottom_stack` output and sparse feature embeddings. If it is None
+      `bottom_stack` output and sparse feature embeddings. If it is None,
       DotInteraction layer is used.
     top_stack: The `top_stack` layer is applied to the `feature_interaction`
       output. The output of top_stack should be in the range [0, 1]. If it is
-      None MLP with layer sizes [512, 256, 1] is used.
-    task: The task the model should optimize for. Defaults to a
+      None, MLP with layer sizes [512, 256, 1] is used.
+    task: The task which the model should optimize for. Defaults to a
       `tfrs.tasks.Ranking` task with a binary cross-entropy loss, suitable
       for tasks like click prediction.
   """
@@ -202,12 +202,10 @@ class RankingModel(models.Model):
     loss = tf.reduce_mean(loss)
     # Scales loss as the default gradients allreduce performs sum inside the
     # optimizer.
-    scaled_loss = loss / tf.distribute.get_strategy().num_replicas_in_sync
-
-    return scaled_loss
+    return loss / tf.distribute.get_strategy().num_replicas_in_sync
 
   def call(self, inputs: Dict[str, tf.Tensor]) -> tf.Tensor:
-    """Execute forward and backward pass, return loss.
+    """Executes forward and backward pass, returns loss.
 
     Args:
       inputs: Model function inputs (features and labels).
@@ -219,8 +217,8 @@ class RankingModel(models.Model):
     sparse_features = inputs["sparse_features"]
 
     sparse_embeddings = self._embedding_layer(sparse_features)
-    # Combining a dictionary to a vector and squeezing dimension from
-    # (batch_size, 1, emb) to (batch_size, emb)
+    # Combine a dictionary to a vector and squeeze dimension from
+    # (batch_size, 1, emb) to (batch_size, emb).
     sparse_embeddings = tf.nest.flatten(sparse_embeddings)
 
     sparse_embedding_vecs = [

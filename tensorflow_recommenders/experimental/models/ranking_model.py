@@ -15,14 +15,12 @@
 """A pre-built ranking model."""
 
 
-import math
 from typing import cast, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import tensorflow as tf
 
 from tensorflow_recommenders import models
 from tensorflow_recommenders import tasks
-from tensorflow_recommenders.layers import embedding
 from tensorflow_recommenders.layers import feature_interaction as feature_interaction_lib
 
 
@@ -66,35 +64,6 @@ class MlpBlock(tf.keras.layers.Layer):
     return x
 
 
-def _get_tpu_embedding_feature_config(
-    vocab_sizes: List[int],
-    embedding_dim: int,
-    table_name_prefix: str = "embedding_table"):
-  """Returns TPU embedding feature config.
-
-  TODO(agagik) move to a separate module.
-
-  Args:
-    vocab_sizes: List of sizes of categories/id's in the table.
-    embedding_dim: Embedding dimension.
-    table_name_prefix: a prefix for embedding tables.
-  """
-  feature_config = {}
-
-  for i, vocab_size in enumerate(vocab_sizes):
-    table_config = tf.tpu.experimental.embedding.TableConfig(
-        vocabulary_size=vocab_size,
-        dim=embedding_dim,
-        combiner="mean",
-        initializer=tf.initializers.TruncatedNormal(
-            mean=0.0, stddev=1 / math.sqrt(embedding_dim)),
-        name=table_name_prefix + "_%s" %i)
-    feature_config[str(i)] = tf.tpu.experimental.embedding.FeatureConfig(
-        table=table_config)
-
-  return feature_config
-
-
 class RankingModel(models.Model):
   """Keras model definition for the Ranking model.
 
@@ -105,13 +74,15 @@ class RankingModel(models.Model):
   for DCN network.
 
   Attributes:
-    vocab_sizes: List of ints, vocab sizes of the sparse features.
-    embedding_dim: Integer, the size of the embedding dimension.
-    emb_optimizer: Optimizer to use for TPU embeddings. If it is None, Adam is
-      used.
+    embedding_layer: The embedding layer is applied to the categorical features.
+      It expects a string-to-tensor (or SparseTensor/RaggedTensor) dictionary as
+      an input and outputs a dictionary of string-to-tensor of feature_name,
+      embedded_value pairs.
+      {feature_name_i: tensor_i} -> {feature_name_i: emb(tensor_i)}.
     bottom_stack: The `bottom_stack` layer is applied to dense features before
-      feature interaction. If it is None, MLP with layer sizes [256, 64,
-      embedding_dim] is used.
+      feature interaction. If it is None, MLP with layer sizes [256, 64, 16] is
+      used. For DLRM model the output of bottom_stack should of shape
+      (batch_size, embedding dimension).
     feature_interaction: Feature interaction layer is applied to the
       `bottom_stack` output and sparse feature embeddings. If it is None
       DotInteraction layer is used.
@@ -125,9 +96,7 @@ class RankingModel(models.Model):
 
   def __init__(
       self,
-      vocab_sizes: List[int],
-      embedding_dim: int = 16,
-      emb_optimizer: Optional[tf.keras.optimizers.Optimizer] = None,
+      embedding_layer: tf.keras.layers.Layer,
       bottom_stack: Optional[tf.keras.layers.Layer] = None,
       feature_interaction: Optional[tf.keras.layers.Layer] = None,
       top_stack: Optional[tf.keras.layers.Layer] = None,
@@ -135,18 +104,9 @@ class RankingModel(models.Model):
 
     super().__init__()
 
-    emb_feature_config = _get_tpu_embedding_feature_config(
-        vocab_sizes=vocab_sizes,
-        embedding_dim=embedding_dim)
-
-    if not emb_optimizer:
-      emb_optimizer = tf.keras.optimizers.Adam()
-
-    self._tpu_embeddings = embedding.TPUEmbedding(
-        emb_feature_config, emb_optimizer)
-
+    self._embedding_layer = embedding_layer
     self._bottom_stack = bottom_stack if bottom_stack else MlpBlock(
-        units=[256, 64, embedding_dim], out_activation="relu")
+        units=[256, 64, 16], out_activation="relu")
     self._top_stack = top_stack if top_stack else MlpBlock(
         units=[512, 256, 1], out_activation="sigmoid")
     self._feature_interaction = (feature_interaction if feature_interaction
@@ -258,7 +218,7 @@ class RankingModel(models.Model):
     dense_features = inputs["dense_features"]
     sparse_features = inputs["sparse_features"]
 
-    sparse_embeddings = self._tpu_embeddings(sparse_features)
+    sparse_embeddings = self._embedding_layer(sparse_features)
     # Combining a dictionary to a vector and squeezing dimension from
     # (batch_size, 1, emb) to (batch_size, emb)
     sparse_embeddings = tf.nest.flatten(sparse_embeddings)
@@ -287,13 +247,13 @@ class RankingModel(models.Model):
     `tfrs.experimental.optimizers.CompositeOptimizer` can be used to apply
     different optimizer to embedding variables and the remaining variables.
     """
-    return self._tpu_embeddings.trainable_variables
+    return self._embedding_layer.trainable_variables
 
   @property
   def dense_trainable_variables(self) -> Sequence[tf.Variable]:
     """Returns all trainable variables that are not embeddings."""
     dense_vars = []
     for layer in self.layers:
-      if layer != self._tpu_embeddings:
+      if layer != self._embedding_layer:
         dense_vars.extend(layer.trainable_variables)
     return dense_vars

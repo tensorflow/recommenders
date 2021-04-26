@@ -122,12 +122,6 @@ class Cross(tf.keras.layers.Layer):
           use_bias=self._use_bias,
       )
     else:
-      if self._projection_dim < 0 or self._projection_dim > last_dim / 2:
-        raise ValueError(
-            "`projection_dim` should be smaller than last_dim / 2 to improve "
-            "the model efficiency, and should be positive. Got "
-            "`projection_dim` {}, and last dimension of input {}".format(
-                self._projection_dim, last_dim))
       self._dense_u = tf.keras.layers.Dense(
           self._projection_dim,
           kernel_initializer=self._kernel_initializer,

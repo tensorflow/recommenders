@@ -49,14 +49,6 @@ class CrossTest(tf.test.TestCase):
     self.evaluate(tf.compat.v1.global_variables_initializer())
     self.assertAllClose(np.asarray([[0.16, 0.32, 0.48]]), output)
 
-  def test_invalid_proj_dim(self):
-    with self.assertRaisesRegexp(ValueError,
-                                 r"should be smaller than last_dim / 2"):
-      x0 = np.random.random((12, 5))
-      x = np.random.random((12, 5))
-      layer = Cross(projection_dim=6)
-      layer(x0, x)
-
   def test_unsupported_input_dim(self):
     with self.assertRaisesRegexp(ValueError,
                                  r"dimension mismatch"):

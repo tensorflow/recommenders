@@ -10,9 +10,14 @@ function create_virtualenv() {
   mkdir -p ~/virtualenv
   pushd ~/virtualenv
   rm -rf $env_name
-  virtualenv -p $env_python $env_name
+  virtualenv --no-pip -p $env_python $env_name
   source $env_name/bin/activate
-  pip install --upgrade pip
+  # Keep using an old version of pip to work around
+  # https://github.com/pypa/pip/blob/6d636902d7712f77abdb4428c290ba9bdbe70d9c/news/9831.bugfix.rst
+  python -m ensurepip
+  python -m pip install -U pip==21.0.1
+  pip install "pip==21.0.1"
+  pip --version
   popd
 }
 

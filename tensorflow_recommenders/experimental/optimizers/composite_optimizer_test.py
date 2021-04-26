@@ -48,10 +48,16 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
     grads2 = tf.constant(grad2_values)
     grads3 = tf.constant(grad3_values)
 
+    comp_optimizer1 = tf.keras.optimizers.get(optimizer1_type)
+    comp_optimizer2 = tf.keras.optimizers.get(optimizer2_type)
+
     composite_optimizer = CompositeOptimizer([
-        (tf.keras.optimizers.get(optimizer1_type), lambda: [var1]),
-        (tf.keras.optimizers.get(optimizer2_type), lambda: [var2, var3]),
+        (comp_optimizer1, lambda: [var1]),
+        (comp_optimizer2, lambda: [var2, var3]),
     ])
+
+    self.assertSequenceEqual(
+        composite_optimizer.optimizers, [comp_optimizer1, comp_optimizer2])
 
     optimizer1 = tf.keras.optimizers.get(optimizer1_type)
     optimizer2 = tf.keras.optimizers.get(optimizer2_type)

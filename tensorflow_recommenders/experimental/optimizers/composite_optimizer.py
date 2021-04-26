@@ -117,3 +117,8 @@ class CompositeOptimizer(tf.keras.optimizers.Optimizer):
       weights += optimizer.weights
     return weights
 
+  @property
+  def optimizers(self) -> List[tf.keras.optimizers.Optimizer]:
+    """Returns the optimizers in composite otimizer (in the original order)."""
+    return [optimizer for optimizer, _ in self._optimizers_and_vars]
+

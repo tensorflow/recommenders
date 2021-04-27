@@ -48,6 +48,8 @@ def _wrap_batch_too_small_error(k: int):
                        "drop_remainder argument to True when batching your "
                        "candidates, or set the handle_incomplete_batches "
                        "argument to True in the constructor. ".format(k=k))
+    else:
+      raise
 
 
 def _take_along_axis(arr: tf.Tensor, indices: tf.Tensor) -> tf.Tensor:

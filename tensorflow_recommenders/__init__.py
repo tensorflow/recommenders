@@ -30,6 +30,7 @@ from tensorflow_recommenders import layers
 from tensorflow_recommenders import metrics
 from tensorflow_recommenders import models
 from tensorflow_recommenders import tasks
+from tensorflow_recommenders import types
 
 
 Model = models.Model

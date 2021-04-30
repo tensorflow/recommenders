@@ -14,84 +14,44 @@
 
 """A pre-built ranking model."""
 
-
-from typing import cast, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import cast, Dict, Optional, Sequence, Tuple, Union
 
 import tensorflow as tf
 
+from tensorflow_recommenders import layers
 from tensorflow_recommenders import models
 from tensorflow_recommenders import tasks
 from tensorflow_recommenders.layers import feature_interaction as feature_interaction_lib
 
 
-class MlpBlock(tf.keras.layers.Layer):
-  """Constructs a sequential multi-layer perceptron (MLP) block."""
+class Ranking(models.Model):
+  """A configurable ranking model.
 
-  def __init__(self,
-               units: List[int],
-               use_bias: bool = True,
-               activation: Union[Callable[[tf.Tensor], tf.Tensor], str,
-                                 None] = "relu",
-               out_activation: Union[Callable[[tf.Tensor], tf.Tensor], str,
-                                     None] = None,
-               **kwargs) -> None:
-    """Initializes the MLP layer.
+  This class represents a sensible and reasonably flexible configuration for a
+  ranking model that can be used for tasks such as CTR prediction.
 
-    Args:
-      units: Sequential list of layer sizes.
-      use_bias: Whether to include a bias term.
-      activation: Type of activation to use on all except the last layer.
-      out_activation: Type of activation to use on last layer.
-      **kwargs: Extra args passed to the Keras Layer base class.
-    """
+  It can be customized as needed, and its constituent blocks can be changed by
+  passing user-defined alternatives.
 
-    super().__init__(**kwargs)
+  For example:
+  - Pass `feature_interaction = tfrs.layers.feature_interaction.DotInteraction()
+    to train a DLRM model, or pass
+    ```
+    feature_interaction = tf.keras.Sequential([
+      tf.keras.layers.Concatenate(),
+      tfrs.layers.feature_interaction.Cross()
+    ])
+    ```
+    to train a DCN model.
+  - Pass `task = tfrs.tasks.Ranking(loss=tf.keras.losses.BinaryCrossentropy())`
+    to train a CTR prediction model, and
+    `tfrs.tasks.Ranking(loss=tf.keras.losses.MeanSquaredError())` to train
+    a rating prediction model.
 
-    self._layers = []
-
-    for num_units in units[:-1]:
-      self._layers.append(
-          tf.keras.layers.Dense(
-              num_units, activation=activation, use_bias=use_bias))
-    self._layers.append(
-        tf.keras.layers.Dense(
-            units[-1], activation=out_activation, use_bias=use_bias))
-
-  def call(self, x: tf.Tensor) -> tf.Tensor:
-    for layer in self._layers:
-      x = layer(x)
-
-    return x
-
-
-class RankingModel(models.Model):
-  """Keras model definition for the Ranking model.
-
-  Layers of Ranking model can be customized as needed. For example we can use
-  feature_interaction = tfrs.layers.feature_interaction.DotInteraction()
-  for DLRM model and use feature_interaction = tf.keras.Sequential(
-  [tf.keras.layers.Concatenate(), tfrs.layers.feature_interaction.Cross()])
-  for DCN network.
-
-  Attributes:
-    embedding_layer: The embedding layer is applied to the categorical features.
-      It expects a string-to-tensor (or SparseTensor/RaggedTensor) dictionary as
-      an input, and outputs a dictionary of string-to-tensor of feature_name,
-      embedded_value pairs.
-      {feature_name_i: tensor_i} -> {feature_name_i: emb(tensor_i)}.
-    bottom_stack: The `bottom_stack` layer is applied to dense features before
-      feature interaction. If it is None, MLP with layer sizes [256, 64, 16] is
-      used. For DLRM model, the output of bottom_stack should be of shape
-      (batch_size, embedding dimension).
-    feature_interaction: Feature interaction layer is applied to the
-      `bottom_stack` output and sparse feature embeddings. If it is None,
-      DotInteraction layer is used.
-    top_stack: The `top_stack` layer is applied to the `feature_interaction`
-      output. The output of top_stack should be in the range [0, 1]. If it is
-      None, MLP with layer sizes [512, 256, 1] is used.
-    task: The task which the model should optimize for. Defaults to a
-      `tfrs.tasks.Ranking` task with a binary cross-entropy loss, suitable
-      for tasks like click prediction.
+  Changing these should cover a broad range of models, but this class is not
+  intended to cover all possible use cases.  For full flexibility inherit
+  from `tfrs.models.Model` and provide your own implementations of
+  the `compute_loss` and `call` methods.
   """
 
   def __init__(
@@ -101,13 +61,35 @@ class RankingModel(models.Model):
       feature_interaction: Optional[tf.keras.layers.Layer] = None,
       top_stack: Optional[tf.keras.layers.Layer] = None,
       task: Optional[tasks.Task] = None) -> None:
+    """Initializes the model.
+
+    Args:
+      embedding_layer: The embedding layer is applied to categorical features.
+        It expects a string-to-tensor (or SparseTensor/RaggedTensor) dict as
+        an input, and outputs a dictionary of string-to-tensor of feature_name,
+        embedded_value pairs.
+        {feature_name_i: tensor_i} -> {feature_name_i: emb(tensor_i)}.
+      bottom_stack: The `bottom_stack` layer is applied to dense features before
+        feature interaction. If None, an MLP with layer sizes [256, 64, 16] is
+        used. For DLRM model, the output of bottom_stack should be of shape
+        (batch_size, embedding dimension).
+      feature_interaction: Feature interaction layer is applied to the
+        `bottom_stack` output and sparse feature embeddings. If it is None,
+        DotInteraction layer is used.
+      top_stack: The `top_stack` layer is applied to the `feature_interaction`
+        output. The output of top_stack should be in the range [0, 1]. If it is
+        None, MLP with layer sizes [512, 256, 1] is used.
+      task: The task which the model should optimize for. Defaults to a
+        `tfrs.tasks.Ranking` task with a binary cross-entropy loss, suitable
+        for tasks like click prediction.
+    """
 
     super().__init__()
 
     self._embedding_layer = embedding_layer
-    self._bottom_stack = bottom_stack if bottom_stack else MlpBlock(
+    self._bottom_stack = bottom_stack if bottom_stack else layers.blocks.MLP(
         units=[256, 64, 16], out_activation="relu")
-    self._top_stack = top_stack if top_stack else MlpBlock(
+    self._top_stack = top_stack if top_stack else layers.blocks.MLP(
         units=[512, 256, 1], out_activation="sigmoid")
     self._feature_interaction = (feature_interaction if feature_interaction
                                  else feature_interaction_lib.DotInteraction())

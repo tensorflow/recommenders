@@ -16,6 +16,7 @@
 
 import math
 from typing import List, Dict
+
 from absl.testing import parameterized
 
 import tensorflow as tf
@@ -45,8 +46,10 @@ def _get_tpu_embedding_feature_config(
         dim=embedding_dim,
         combiner="mean",
         initializer=tf.initializers.TruncatedNormal(
-            mean=0.0, stddev=1 / math.sqrt(embedding_dim)),
-        name=table_name_prefix + "_%s" %i)
+            mean=0.0, stddev=1 / math.sqrt(embedding_dim)
+        ),
+        name=f"{table_name_prefix}_{i}"
+    )
     feature_config[str(i)] = tf.tpu.experimental.embedding.FeatureConfig(
         table=table_config)
 
@@ -108,7 +111,7 @@ def _generate_synthetic_data(num_dense: int,
   return dataset.batch(batch_size, drop_remainder=True)
 
 
-class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
+class RankingTest(tf.test.TestCase, parameterized.TestCase):
 
   def setUp(self):
     super().setUp()
@@ -131,14 +134,14 @@ class RankingModelTest(tf.test.TestCase, parameterized.TestCase):
       )
   def test_ranking_model(self, feature_interaction_layer, use_weights=False):
     """Tests a ranking model."""
-    model = tfrs.experimental.models.RankingModel(
+    model = tfrs.experimental.models.Ranking(
         embedding_layer=self.tpu_embedding,
-        bottom_stack=tfrs.experimental.models.MlpBlock(
-            units=[100, 20], out_activation="relu"),
+        bottom_stack=tfrs.layers.blocks.MLP(
+            units=[100, 20], final_activation="relu"),
         feature_interaction=feature_interaction_layer,
-        top_stack=tfrs.experimental.models.MlpBlock(
+        top_stack=tfrs.layers.blocks.MLP(
             units=[40, 20, 1],
-            out_activation="sigmoid"
+            final_activation="sigmoid"
         ),
     )
     model.compile(self.optimizer,

@@ -14,5 +14,4 @@
 
 """Experimental Models."""
 
-from tensorflow_recommenders.experimental.models.ranking_model import MlpBlock
-from tensorflow_recommenders.experimental.models.ranking_model import RankingModel
+from tensorflow_recommenders.experimental.models.ranking import Ranking

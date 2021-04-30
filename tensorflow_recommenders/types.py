@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint-as: python3
-"""Layers."""
+"""Type definitions."""
 
-from tensorflow_recommenders.layers import blocks
-from tensorflow_recommenders.layers import embedding
-from tensorflow_recommenders.layers import factorized_top_k
-from tensorflow_recommenders.layers import feature_interaction
-from tensorflow_recommenders.layers import loss
-from tensorflow_recommenders.layers.feature_interaction import dcn
+from typing import Callable, Union
+
+
+import tensorflow as tf
+
+
+Activation = Union[Callable[[tf.Tensor], tf.Tensor], str]

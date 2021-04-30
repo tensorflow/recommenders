@@ -14,11 +14,22 @@ py_library(
     srcs = ["__init__.py"],
     srcs_version = "PY3",
     deps = [
+        ":blocks",
         ":factorized_top_k",
         ":loss",
         "//tensorflow_recommenders/layers/embedding",
         "//tensorflow_recommenders/layers/feature_interaction",
         "//tensorflow_recommenders/layers/feature_interaction:dcn",
+    ],
+)
+
+py_library(
+    name = "blocks",
+    srcs = ["blocks.py"],
+    srcs_version = "PY3",
+    deps = [
+        # py/tensorflow dep,
+        "//tensorflow_recommenders:types",
     ],
 )
 

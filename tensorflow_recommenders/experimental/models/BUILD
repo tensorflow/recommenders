@@ -13,17 +13,17 @@ py_library(
     srcs = ["__init__.py"],
     srcs_version = "PY3",
     deps = [
-        ":ranking_model",
+        ":ranking",
     ],
 )
 
 py_library(
-    name = "ranking_model",
-    srcs = ["ranking_model.py"],
+    name = "ranking",
+    srcs = ["ranking.py"],
     srcs_version = "PY3",
     deps = [
         # py/tensorflow dep,
-        "//tensorflow_recommenders/layers/embedding",
+        "//tensorflow_recommenders/layers",
         "//tensorflow_recommenders/layers/feature_interaction",
         "//tensorflow_recommenders/models",
         "//tensorflow_recommenders/tasks",
@@ -31,9 +31,9 @@ py_library(
 )
 
 py_test(
-    name = "ranking_model_test",
+    name = "ranking_test",
     srcs = [
-        "ranking_model_test.py",
+        "ranking_test.py",
     ],
     python_version = "PY3",
     srcs_version = "PY3",

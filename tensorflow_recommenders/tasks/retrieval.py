@@ -36,7 +36,12 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
   This task defines models that facilitate efficient retrieval of candidates
   from large corpora by maintaining a two-tower, factorized structure: separate
   query and candidate representation towers, joined at the top via a lightweight
-  scoring function.
+  scoring function. Unlike tfrs.tasks.Ranking, this retrieval task assumes your
+  query- and candidate-tower have the same dimensionality in their final output
+  layer so that it can perform this final dot-product scoring (`tf.linalg.matmul`)
+  on your model's behalf. For finer-grain control of how your query- and candidate-
+  embeddings participate in inference, use tfrs.tasks.Ranking to which you must
+  bring your own `scores` vector.
   """
 
   def __init__(self,
@@ -95,7 +100,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
            compute_metrics: bool = True) -> tf.Tensor:
     """Computes the task loss and metrics.
 
-    The main argument are pairs of query and candidate embeddings: the first row
+    The main arguments are pairs of query and candidate embeddings: the first row
     of query_embeddings denotes a query for which the candidate from the first
     row of candidate embeddings was selected by the user.
 
@@ -109,10 +114,10 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       candidate_embeddings: [num_queries, embedding_dim] tensor of candidate
         representations.
       sample_weight: [num_queries] tensor of sample weights.
-      candidate_sampling_probability: Optional tensor of candidate sampling
+      candidate_sampling_probability: Optional [m, n] tensor of candidate sampling
         probabilities. When given will be be used to correct the logits to
         reflect the sampling probability of negative candidates.
-      candidate_ids: Optional tensor containing candidate ids. When given
+      candidate_ids: Optional [m,n] tensor containing candidate ids. When given
         enables removing accidental hits of examples used as negatives. An
         accidental hit is defined as an candidate that is used as an in-batch
         negative but has the same id with the positive candidate.
@@ -124,7 +129,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     """
 
     scores = tf.linalg.matmul(
-        query_embeddings, candidate_embeddings, transpose_b=True)
+      query_embeddings, candidate_embeddings, transpose_b=True)
 
     num_queries = tf.shape(scores)[0]
     num_candidates = tf.shape(scores)[1]

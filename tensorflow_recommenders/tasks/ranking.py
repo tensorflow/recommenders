@@ -19,7 +19,6 @@ from typing import List, Optional, Text
 
 import tensorflow as tf
 
-
 from tensorflow_recommenders.tasks import base
 
 
@@ -34,7 +33,10 @@ class Ranking(tf.keras.layers.Layer, base.Task):
 
   This task helps with building ranker models. Usually, these will involve
   predicting signals such as clicks, cart additions, likes, ratings, and
-  purchases.
+  purchases. Accordingly, this task is less prescriptive than `tfrs.Rerieval`
+  on how you generate "relevance" scores from query- and candidate-embeddings.
+  Your model is expected to call `tfrs.tasks.Ranking` with scores and labels
+  rather than factorized embeddings.
   """
 
   def __init__(

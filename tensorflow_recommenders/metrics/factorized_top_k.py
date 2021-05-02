@@ -41,7 +41,7 @@ class FactorizedTopK(tf.keras.layers.Layer):
     Args:
       candidates: A layer for retrieving top candidates in response
         to a query, or a dataset of candidate embeddings from which
-        candidates should be retrieved.
+        k candidates should be retrieved.
       metrics: The metrics to compute. If not supplied, will compute top-K
         categorical accuracy metrics.
       k: The number of top scoring candidates to retrieve for metric evaluation.

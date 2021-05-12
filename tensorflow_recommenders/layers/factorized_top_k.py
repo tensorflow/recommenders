@@ -464,6 +464,9 @@ class BruteForce(TopK):
         when performing searches. If not given, indices into the candidates
         tensor will be given instead.
 
+    Raises:
+      ValueError on incorrectly shaped inputs.
+
     Returns:
       Self.
     """
@@ -480,6 +483,13 @@ class BruteForce(TopK):
     if tf.rank(candidates) != 2:
       raise ValueError(
           f"The candidates tensor must be 2D (got {candidates.shape}).")
+
+    if candidates.shape[0] != identifiers.shape[0]:
+      raise ValueError(
+          "The candidates and identifiers tensors must have the same number of rows "
+          f"(got {candidates.shape[0]} candidates rows and {identifiers.shape[0]} "
+          "identifier rows). "
+      )
 
     # We need any value that has the correct dtype.
     identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)
@@ -647,6 +657,9 @@ class ScaNN(TopK):
         when performing searches. If not given, indices into the candidates
         tensor will be given instead.
 
+    Raises:
+      ValueError on incorrectly shaped inputs.
+
     Returns:
       Self.
     """
@@ -663,6 +676,13 @@ class ScaNN(TopK):
     if len(candidates.shape) != 2:
       raise ValueError(
           f"The candidates tensor must be 2D (got {candidates.shape}).")
+
+    if candidates.shape[0] != identifiers.shape[0]:
+      raise ValueError(
+          "The candidates and identifiers tensors must have the same number of rows "
+          f"(got {candidates.shape[0]} candidates rows and {identifiers.shape[0]} "
+          "identifier rows). "
+      )
 
     self._serialized_searcher = self._build_searcher(
         candidates).serialize_to_module()

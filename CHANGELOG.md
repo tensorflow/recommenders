@@ -1,5 +1,13 @@
 # Changelog
 
+## [unreleased][unreleased]
+
+### Changed
+
+-   Supplying incompatibly-shaped candidates and identifiers inputs to
+    `factorized_top_k` layers will now raise (to prevent issues similar to
+    https://github.com/tensorflow/recommenders/issues/286).
+
 ## [0.5.0][2021-05-06]
 
 ### Changed
@@ -12,7 +20,7 @@
 -   `tfrs.layers.dcn.Cross` and `DotInteraction` layers have been moved to
     `tfrs.layers.feature_interaction` package.
 
-## Added
+### Added
 
 -   `tfrs.experimental.models.Ranking`, an experimental pre-built model for
     ranking tasks. Can be used as DLRM like model with Dot Product feature

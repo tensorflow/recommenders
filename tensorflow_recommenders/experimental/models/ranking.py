@@ -34,7 +34,8 @@ class Ranking(models.Model):
   passing user-defined alternatives.
 
   For example:
-  - Pass `feature_interaction = tfrs.layers.feature_interaction.DotInteraction()
+  - Pass
+    `feature_interaction = tfrs.layers.feature_interaction.DotInteraction()`
     to train a DLRM model, or pass
     ```
     feature_interaction = tf.keras.Sequential([

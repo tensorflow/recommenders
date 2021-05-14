@@ -69,7 +69,7 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
 
     for _ in range(10):
       # Test that applying a composite optimizer has the same effect as
-      # applying optimizer1 and optimizer2 seperately on subset of gradients/
+      # applying optimizer1 and optimizer2 separately on subset of gradients/
       # variables.
       composite_optimizer.apply_gradients(grads_and_vars)
       optimizer1.apply_gradients(grads_and_vars_1)

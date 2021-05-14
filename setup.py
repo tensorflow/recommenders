@@ -17,12 +17,7 @@
 import pathlib
 import setuptools
 
-VERSION = "0.5.0"
-
-REQUIRED_PACKAGES = [
-    "absl-py >= 0.1.6",
-    "tensorflow == 2.4.*",
-]
+VERSION = "0.5.1"
 
 long_description = (pathlib.Path(__file__).parent
                     .joinpath("README.md")
@@ -38,12 +33,12 @@ setuptools.setup(
     author="Google Inc.",
     author_email="packages@tensorflow.org",
     packages=setuptools.find_packages(),
-    install_requires=REQUIRED_PACKAGES,
+    install_requires=pathlib.Path("requirements.txt").read_text().splitlines(),
     extras_require={
         "docs": [
             "fire",
             "annoy",
-            "scann == 1.2.0",
+            "scann == 1.2.*",
         ],
     },
     # PyPI package information.

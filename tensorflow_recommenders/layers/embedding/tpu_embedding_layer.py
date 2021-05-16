@@ -527,7 +527,9 @@ class TPUEmbedding(tf.keras.layers.Layer):
 
     def call(self, inputs):
       embedding = self.embedding_layer(inputs)
-      logits = tf.keras.layers.Dense(1)(tf.concat(tf.nest.flatten(embedding)))
+      logits = tf.keras.layers.Dense(1)(
+        tf.concat(tf.nest.flatten(embedding)), axis=1
+      )
 
   with strategy.scope():
     embedding_optimizer = tf.keras.optimizers.Adagrad(learning_rate=0.1)

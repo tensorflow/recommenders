@@ -36,12 +36,15 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
   This task defines models that facilitate efficient retrieval of candidates
   from large corpora by maintaining a two-tower, factorized structure: separate
   query and candidate representation towers, joined at the top via a lightweight
-  scoring function. Unlike tfrs.tasks.Ranking, this retrieval task assumes your
-  query- and candidate-tower have the same dimensionality in their final output
-  layer so that it can perform this final dot-product scoring (`tf.linalg.matmul`)
-  on your model's behalf. For finer-grain control of how your query- and candidate-
-  embeddings participate in inference, use tfrs.tasks.Ranking to which you must
-  bring your own `scores` vector.
+  scoring function. This two-tower factorized structure is often required for retrieval
+  tasks, because it allows the candidate representations to be computed ahead of time
+  and stored in a fast retrieval index (such as tfrs.layers.factorized_top_k.ScaNN). 
+  Consequently, this Retrieval task assumes your query- and candidate-tower have the
+  same dimensionality in their final output layer and internally performs a simple 
+  dot-product scoring (tf.linalg.matmul) on your model's behalf.
+
+  For finer-grained control of how your query- and candidate-embeddings participate
+  in inference, consider using the tfrs.tasks.Ranking task which expects `scores` as inputs.
   """
 
   def __init__(self,

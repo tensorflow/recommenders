@@ -117,12 +117,12 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       candidate_embeddings: [num_queries, embedding_dim] tensor of candidate
         representations.
       sample_weight: [num_queries] tensor of sample weights.
-      candidate_sampling_probability: Optional [m, n] tensor of candidate sampling
+      candidate_sampling_probability: Optional [num_queries] tensor of candidate sampling
         probabilities. When given will be be used to correct the logits to
         reflect the sampling probability of negative candidates.
-      candidate_ids: Optional [m,n] tensor containing candidate ids. When given
+      candidate_ids: Optional [num_queries] tensor containing candidate ids. When given
         enables removing accidental hits of examples used as negatives. An
-        accidental hit is defined as an candidate that is used as an in-batch
+        accidental hit is defined as a candidate that is used as an in-batch
         negative but has the same id with the positive candidate.
       compute_metrics: Whether to compute metrics. Set this to False
         during training for faster training.

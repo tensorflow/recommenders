@@ -12,7 +12,7 @@
 
 ### Changed
 
--   Fixed the bug in `tfrs.layers.loss.SamplingProbablityCorrection` that logits
+-   Fixed the bug in `tfrs.layers.loss.SamplingProbabilityCorrection` that logits
     should subtract the log of item probability.
 -   `tfrs.experimental.optimizers.CompositeOptimizer`: an optimizer that
     composes multiple individual optimizers which can be applied to different

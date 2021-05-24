@@ -123,6 +123,13 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       loss: Tensor of loss values.
     """
 
+    if isinstance(tf.distribute.get_strategy(), tf.distribute.TPUStrategy):
+      candidate_embeddings = _cross_replica_concat(candidate_embeddings)
+      if candidate_sampling_probability is not None:
+        candidate_sampling_probability = _cross_replica_concat(
+            candidate_sampling_probability
+        )
+
     scores = tf.linalg.matmul(
         query_embeddings, candidate_embeddings, transpose_b=True)
 
@@ -159,3 +166,77 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     with tf.control_dependencies([update_op]):
       return tf.identity(loss)
+
+
+def _cross_replica_concat(values: tf.Tensor) -> tf.Tensor:
+  """Combine tensors, one from each TPU core, into a single concatenated tensor.
+
+  The resulting tensor's elements are in the order of the IDs of the cores that
+  contributed them, but offset so that the first element on each core is the one
+  contributed by that core. On the ith core, out of N total, it would look like:
+  tf.Tensor([
+      values from core i,
+      values from core i+1,
+      ...
+      values from core N,
+      values from core 1,
+      ...
+      values from core i-1
+  ]).
+
+  Here is an example that is meant to run on 4 TPU cores:
+
+  >>> resolver = tf.distribute.cluster_resolver.TPUClusterResolver(tpu="")
+  >>> tf.config.experimental_connect_to_cluster(resolver)
+  >>> tf.tpu.experimental.initialize_tpu_system(resolver)
+  >>> strategy = tf.distribute.experimental.TPUStrategy(resolver)
+  >>> data = np.array([
+  ...     [0, 0, 0, 0],
+  ...     [1, 1, 1, 1],
+  ...     [2, 2, 2, 2],
+  ...     [3, 3, 3, 3]
+  ... ])
+  >>> dataset = tf.data.Dataset.from_tensor_slices(data).repeat().batch(4)
+  >>> dataset_iterator = iter(strategy.experimental_distribute_dataset(dataset))
+  >>> distributed_values = next(dataset_iterator)
+  >>> strategy.run(tf.function(_cross_replica_concat), (distributed_values,))
+  PerReplica: {
+      0: <tf.Tensor: shape=(4, 4), dtype=int64, numpy=array([
+          [0, 0, 0, 0],
+          [1, 1, 1, 1],
+          [2, 2, 2, 2],
+          [3, 3, 3, 3]
+      ], dtype=int64)>,
+      1: <tf.Tensor: shape=(4, 4), dtype=int64, numpy=array([
+          [1, 1, 1, 1],
+          [2, 2, 2, 2],
+          [3, 3, 3, 3],
+          [0, 0, 0, 0]
+      ], dtype=int64)>,
+      2: <tf.Tensor: shape=(4, 4), dtype=int64, numpy=array([
+          [2, 2, 2, 2],
+          [3, 3, 3, 3],
+          [0, 0, 0, 0],
+          [1, 1, 1, 1]
+      ], dtype=int64)>,
+      3: <tf.Tensor: shape=(4, 4), dtype=int64, numpy=array([
+          [3, 3, 3, 3],
+          [0, 0, 0, 0],
+          [1, 1, 1, 1],
+          [2, 2, 2, 2]
+      ], dtype=int64)>
+  }
+
+  Args:
+    values: The current TPU core's contribution to the concatenated tensor.
+
+  Returns:
+    A concatenated tensor that is made up of one tensor from each TPU core.
+  """
+  context = tf.distribute.get_replica_context()
+  gathered = context.all_gather(values, axis=0)
+  return tf.roll(
+      gathered,
+      -context.replica_id_in_sync_group * values.shape[0],
+      axis=0
+  )

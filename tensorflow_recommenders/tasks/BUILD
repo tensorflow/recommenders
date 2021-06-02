@@ -9,6 +9,8 @@ package(
 
 licenses(["notice"])
 
+exports_files(["retrieval_test.py"])
+
 py_library(
     name = "base",
     srcs = ["base.py"],

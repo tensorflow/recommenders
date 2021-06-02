@@ -147,7 +147,7 @@ class RemoveAccidentalHits(tf.keras.layers.Layer):
     return logits + duplicate * MIN_FLOAT
 
 
-class SamplingProbablityCorrection(tf.keras.layers.Layer):
+class SamplingProbabilityCorrection(tf.keras.layers.Layer):
   """Sampling probability correction."""
 
   def __call__(self, logits: tf.Tensor,

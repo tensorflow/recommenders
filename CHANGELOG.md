@@ -1,5 +1,8 @@
 # Changelog
 
+
+## [0.5.2][2021-06-02]
+Fixing typo in class name: SamplingProbablityCorrection -> SamplingProbabilityCorrection
 ## [0.5.1][2021-05-14]
 
 ### Changed
@@ -12,7 +15,7 @@
 
 ### Changed
 
--   Fixed the bug in `tfrs.layers.loss.SamplingProbablityCorrection` that logits
+-   Fixed the bug in `tfrs.layers.loss.SamplingProbabilityCorrection` that logits
     should subtract the log of item probability.
 -   `tfrs.experimental.optimizers.CompositeOptimizer`: an optimizer that
     composes multiple individual optimizers which can be applied to different

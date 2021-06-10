@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=g-long-lambda
 """Tests for tensorflow_recommenders.experimental.models.ranking_model."""
 
+import itertools
 import math
+
 from typing import List, Dict
 
 from absl.testing import parameterized
@@ -59,7 +62,6 @@ def _get_tpu_embedding_feature_config(
 def _generate_synthetic_data(num_dense: int,
                              vocab_sizes: List[int],
                              dataset_size: int,
-                             is_training: bool,
                              batch_size: int,
                              generate_weights: bool = False) -> tf.data.Dataset:
   dense_tensor = tf.random.uniform(
@@ -105,72 +107,62 @@ def _generate_synthetic_data(num_dense: int,
     )
 
   dataset = tf.data.Dataset.from_tensor_slices(input_elem)
-  if is_training:
-    dataset = dataset.repeat()
 
   return dataset.batch(batch_size, drop_remainder=True)
 
 
 class RankingTest(tf.test.TestCase, parameterized.TestCase):
 
-  def setUp(self):
-    super().setUp()
-    self.optimizer = tf.keras.optimizers.Adam()
-    self.vocab_sizes = [100, 26]
-    embedding_dim = 20
-    emb_feature_config = _get_tpu_embedding_feature_config(
-        vocab_sizes=self.vocab_sizes,
-        embedding_dim=embedding_dim)
-    self.tpu_embedding = tfrs.layers.embedding.TPUEmbedding(
-        emb_feature_config, self.optimizer)
-
   @parameterized.parameters(
-      (tfrs.layers.feature_interaction.DotInteraction(), True),
-      (tfrs.layers.feature_interaction.DotInteraction(), False),
-      (tf.keras.Sequential([tf.keras.layers.Concatenate(),
-                            tfrs.layers.feature_interaction.Cross()]), True),
-      (tf.keras.Sequential([tf.keras.layers.Concatenate(),
-                            tfrs.layers.feature_interaction.Cross()]), False),
-      )
-  def test_ranking_model(self, feature_interaction_layer, use_weights=False):
+      itertools.product(
+          # Feature interaction layers.
+          (
+              tfrs.layers.feature_interaction.DotInteraction,
+              lambda: tf.keras.Sequential([
+                  tf.keras.layers.Concatenate(),
+                  tfrs.layers.feature_interaction.Cross()
+              ]),
+          ),
+          # Bottom stack.
+          (lambda: None, lambda: tfrs.layers.blocks.MLP(units=[40, 20])),
+          # Top stack.
+          (lambda: None, lambda: tfrs.layers.blocks.MLP(
+              units=[40, 20, 1], final_activation="sigmoid")),
+          # Use weights.
+          (True, False)))
+  def test_ranking_model(self,
+                         feature_interaction_layer,
+                         bottom_stack,
+                         top_stack,
+                         use_weights=False):
     """Tests a ranking model."""
+
+    vocabulary_sizes = [100, 26]
+
+    embedding_feature_config = _get_tpu_embedding_feature_config(
+        vocab_sizes=vocabulary_sizes, embedding_dim=20)
+    optimizer = tf.keras.optimizers.Adam()
+
     model = tfrs.experimental.models.Ranking(
-        embedding_layer=self.tpu_embedding,
+        embedding_layer=tfrs.layers.embedding.TPUEmbedding(
+            embedding_feature_config, optimizer),
         bottom_stack=tfrs.layers.blocks.MLP(
             units=[100, 20], final_activation="relu"),
-        feature_interaction=feature_interaction_layer,
-        top_stack=tfrs.layers.blocks.MLP(
-            units=[40, 20, 1],
-            final_activation="sigmoid"
-        ),
-    )
-    model.compile(self.optimizer,
-                  steps_per_execution=5)
+        feature_interaction=feature_interaction_layer(),
+        top_stack=top_stack())
+    model.compile(optimizer=optimizer, steps_per_execution=5)
 
-    train_dataset = _generate_synthetic_data(
+    dataset = _generate_synthetic_data(
         num_dense=8,
-        vocab_sizes=self.vocab_sizes,
-        dataset_size=1024,
-        is_training=True,
+        vocab_sizes=vocabulary_sizes,
+        dataset_size=64,
         batch_size=16,
-        generate_weights=use_weights
-    )
+        generate_weights=use_weights)
 
-    eval_dataset = _generate_synthetic_data(
-        num_dense=8,
-        vocab_sizes=self.vocab_sizes,
-        dataset_size=256,
-        is_training=False,
-        batch_size=16,
-        generate_weights=use_weights
-    )
+    model.fit(
+        dataset.repeat(), validation_data=dataset, epochs=1, steps_per_epoch=5)
 
-    model.fit(train_dataset,
-              validation_data=eval_dataset,
-              epochs=2,
-              steps_per_epoch=100)
-
-    metrics_ = model.evaluate(eval_dataset, return_dict=True)
+    metrics_ = model.evaluate(dataset, return_dict=True)
 
     self.assertIn("loss", metrics_)
     self.assertIn("accuracy", metrics_)

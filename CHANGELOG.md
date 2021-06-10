@@ -1,5 +1,12 @@
 # Changelog
 
+## [unreleased][unreleased]
+
+### Fixed
+
+-   Fixed error in default arguments to `tfrs.experimental.models.Ranking`
+    (https://github.com/tensorflow/recommenders/issues/311).
+
 ## [0.5.1][2021-05-14]
 
 ### Changed

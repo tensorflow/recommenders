@@ -89,9 +89,9 @@ class Ranking(models.Model):
 
     self._embedding_layer = embedding_layer
     self._bottom_stack = bottom_stack if bottom_stack else layers.blocks.MLP(
-        units=[256, 64, 16], out_activation="relu")
+        units=[256, 64, 16], final_activation="relu")
     self._top_stack = top_stack if top_stack else layers.blocks.MLP(
-        units=[512, 256, 1], out_activation="sigmoid")
+        units=[512, 256, 1], final_activation="sigmoid")
     self._feature_interaction = (feature_interaction if feature_interaction
                                  else feature_interaction_lib.DotInteraction())
 

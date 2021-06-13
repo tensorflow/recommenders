@@ -252,7 +252,7 @@ class Streaming(TopK):
                query_model: Optional[tf.keras.Model] = None,
                k: int = 10,
                handle_incomplete_batches: bool = True,
-               num_parallel_calls: int = tf.data.experimental.AUTOTUNE,
+               num_parallel_calls: int = tf.data.AUTOTUNE,
                sorted_order: bool = True) -> None:
     """Initializes the layer.
 

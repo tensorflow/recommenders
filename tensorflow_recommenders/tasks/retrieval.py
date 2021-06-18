@@ -123,13 +123,6 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       loss: Tensor of loss values.
     """
 
-    if isinstance(tf.distribute.get_strategy(), tf.distribute.TPUStrategy):
-      candidate_embeddings = _cross_replica_concat(candidate_embeddings)
-      if candidate_sampling_probability is not None:
-        candidate_sampling_probability = _cross_replica_concat(
-            candidate_sampling_probability
-        )
-
     scores = tf.linalg.matmul(
         query_embeddings, candidate_embeddings, transpose_b=True)
 
@@ -232,9 +225,21 @@ def _cross_replica_concat(values: tf.Tensor) -> tf.Tensor:
 
   Returns:
     A concatenated tensor that is made up of one tensor from each TPU core.
+
+  Raises:
+    ValueError: The current TPU core's tensor is dynamically shaped in the
+      batch dimension.
   """
+
+  if values.shape[0] is None:
+    raise ValueError(
+        f"Tensor {values} should not be dynamically shaped in the batch "
+        "dimension."
+    )
+
   context = tf.distribute.get_replica_context()
   gathered = context.all_gather(values, axis=0)
+
   return tf.roll(
       gathered,
       -context.replica_id_in_sync_group * values.shape[0],

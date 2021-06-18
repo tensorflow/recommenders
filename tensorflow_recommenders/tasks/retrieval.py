@@ -123,13 +123,6 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       loss: Tensor of loss values.
     """
 
-    if isinstance(tf.distribute.get_strategy(), tf.distribute.TPUStrategy):
-      candidate_embeddings = _cross_replica_concat(candidate_embeddings)
-      if candidate_sampling_probability is not None:
-        candidate_sampling_probability = _cross_replica_concat(
-            candidate_sampling_probability
-        )
-
     scores = tf.linalg.matmul(
         query_embeddings, candidate_embeddings, transpose_b=True)
 

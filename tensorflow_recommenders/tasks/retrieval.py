@@ -15,7 +15,7 @@
 # Lint-as: python3
 """A factorized retrieval task."""
 
-from typing import Optional, Text
+from typing import Optional, Text, List
 
 import tensorflow as tf
 
@@ -42,6 +42,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
   def __init__(self,
                loss: Optional[tf.keras.losses.Loss] = None,
                metrics: Optional[tfrs_metrics.FactorizedTopK] = None,
+               batch_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
                temperature: Optional[float] = None,
                num_hard_negatives: Optional[int] = None,
                name: Optional[Text] = None) -> None:
@@ -56,6 +57,10 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
        Note, because the metrics range over the entire candidate set, they are
        usually much slower to compute. Consider setting `compute_metrics=False`
        during training to save the time in computing the metrics.
+      batch_metrics: Metrics measuring how good the model is at picking out the
+       true candidate for a query from other candidates in the batch. For
+       example, a batch AUC metric would measure the probability that the true
+       candidate is scored higher than the other candidates in the batch.
       temperature: Temperature of the softmax.
       num_hard_negatives: If positive, the `num_hard_negatives` negative
         examples with largest logits are kept when computing cross-entropy loss.
@@ -70,6 +75,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
         from_logits=True, reduction=tf.keras.losses.Reduction.SUM)
 
     self._factorized_metrics = metrics
+    self._batch_metrics = batch_metrics
     self._temperature = temperature
     self._num_hard_negatives = num_hard_negatives
 
@@ -131,6 +137,18 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     labels = tf.eye(num_queries, num_candidates)
 
+    metric_update_ops = []
+    if compute_metrics:
+      if self._factorized_metrics:
+        metric_update_ops.append(
+            self._factorized_metrics.update_state(query_embeddings,
+                                                  candidate_embeddings))
+      if self._batch_metrics:
+        metric_update_ops.extend([
+            batch_metric.update_state(labels, scores)
+            for batch_metric in self._batch_metrics
+        ])
+
     if self._temperature is not None:
       scores = scores / self._temperature
 
@@ -148,16 +166,10 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)
 
-    if not compute_metrics:
+    if not metric_update_ops:
       return loss
 
-    if not self._factorized_metrics:
-      return loss
-
-    update_op = self._factorized_metrics.update_state(query_embeddings,
-                                                      candidate_embeddings)
-
-    with tf.control_dependencies([update_op]):
+    with tf.control_dependencies(metric_update_ops):
       return tf.identity(loss)
 
 

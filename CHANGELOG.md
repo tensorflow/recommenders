@@ -7,6 +7,12 @@
 -   Fixed error in default arguments to `tfrs.experimental.models.Ranking`
     (https://github.com/tensorflow/recommenders/issues/311).
 
+### Added
+
+-   Added `batch_metrics` to `tfrs.tasks.Retrieval` for measuring how good the
+    model is at picking out the true candidate for a query from other candidates
+    in the batch.
+
 ## [0.5.1][2021-05-14]
 
 ### Changed

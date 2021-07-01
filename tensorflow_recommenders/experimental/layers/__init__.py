@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Experimental APIs."""
+"""Experimental layers APIs."""
 
-from tensorflow_recommenders.experimental import layers
-from tensorflow_recommenders.experimental import models
-from tensorflow_recommenders.experimental import optimizers
+from tensorflow_recommenders.experimental.layers import embedding

@@ -9,12 +9,10 @@ package(
 licenses(["notice"])
 
 py_library(
-    name = "experimental",
+    name = "layers",
     srcs = ["__init__.py"],
     srcs_version = "PY3",
     deps = [
-        "//tensorflow_recommenders/experimental/layers",
-        "//tensorflow_recommenders/experimental/models",
-        "//tensorflow_recommenders/experimental/optimizers",
+        "//tensorflow_recommenders/experimental/layers/embedding",
     ],
 )

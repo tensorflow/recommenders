@@ -124,30 +124,33 @@ class RankingTest(tf.test.TestCase, parameterized.TestCase):
               ]),
           ),
           # Bottom stack.
-          (lambda: None, lambda: tfrs.layers.blocks.MLP(units=[40, 20])),
+          (lambda: None, lambda: tfrs.layers.blocks.MLP(units=[40, 16])),
           # Top stack.
           (lambda: None, lambda: tfrs.layers.blocks.MLP(
               units=[40, 20, 1], final_activation="sigmoid")),
           # Use weights.
-          (True, False)))
+          (True, False),
+          # Size threshold.
+          (None, -1, 20)))
   def test_ranking_model(self,
                          feature_interaction_layer,
                          bottom_stack,
                          top_stack,
-                         use_weights=False):
+                         use_weights=False,
+                         size_threshold=10):
     """Tests a ranking model."""
-
-    vocabulary_sizes = [100, 26]
+    vocabulary_sizes = [30, 3, 26]
 
     embedding_feature_config = _get_tpu_embedding_feature_config(
-        vocab_sizes=vocabulary_sizes, embedding_dim=20)
+        vocab_sizes=vocabulary_sizes, embedding_dim=16)
     optimizer = tf.keras.optimizers.Adam()
 
     model = tfrs.experimental.models.Ranking(
-        embedding_layer=tfrs.layers.embedding.TPUEmbedding(
-            embedding_feature_config, optimizer),
-        bottom_stack=tfrs.layers.blocks.MLP(
-            units=[100, 20], final_activation="relu"),
+        embedding_layer=tfrs.experimental.layers.embedding.PartialTPUEmbedding(
+            feature_config=embedding_feature_config,
+            optimizer=optimizer,
+            size_threshold=size_threshold),
+        bottom_stack=bottom_stack(),
         feature_interaction=feature_interaction_layer(),
         top_stack=top_stack())
     model.compile(optimizer=optimizer, steps_per_execution=5)

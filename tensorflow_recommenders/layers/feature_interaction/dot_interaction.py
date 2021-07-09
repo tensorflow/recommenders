@@ -33,14 +33,21 @@ class DotInteraction(tf.keras.layers.Layer):
     self_interaction: Boolean indicating if features should self-interact.
       If it is True, then the diagonal enteries of the interaction matric are
       also taken.
+    skip_gather: An optimization flag. If it's set then the upper triangle part
+      of the dot interaction matrix dot(e_i, e_j) is set to 0. The resulting
+      activations will be of dimension [num_features * num_features] from which
+      half will be zeros. Otherwise activations will be only lower triangle part
+      of the interaction matrix. The later saves space but is much slower.
     name: String name of the layer.
   """
 
   def __init__(self,
                self_interaction: bool = False,
+               skip_gather: bool = False,
                name: Optional[str] = None,
                **kwargs) -> None:
     self._self_interaction = self_interaction
+    self._skip_gather = skip_gather
     super().__init__(name=name, **kwargs)
 
   def call(self, inputs: List[tf.Tensor]) -> tf.Tensor:
@@ -51,15 +58,22 @@ class DotInteraction(tf.keras.layers.Layer):
     Pre-condition: The tensors should all have the same shape.
 
     Args:
-      inputs: List of features with shape [batch_size, feature_dim].
+      inputs: List of features with shapes [batch_size, feature_dim].
 
     Returns:
-      activations: Tensor representing interacted features.
+      activations: Tensor representing interacted features. It has a dimension
+      `num_features * num_features` if skip_gather is True, otherside
+      `num_features * (num_features + 1) / 2` if self_interaction is True and
+      `num_features * (num_features - 1) / 2` if self_interaction is False.
     """
+    num_features = len(inputs)
     batch_size = tf.shape(inputs[0])[0]
-    # concat_features shape: B,num_features,feature_width
+    feature_dim = tf.shape(inputs[0])[1]
+    # concat_features shape: batch_size, num_features, feature_dim
     try:
-      concat_features = tf.stack(inputs, axis=1)
+      concat_features = tf.concat(inputs, axis=-1)
+      concat_features = tf.reshape(concat_features,
+                                   [batch_size, -1, feature_dim])
     except (ValueError, tf.errors.InvalidArgumentError) as e:
       raise ValueError(f"Input tensors` dimensions must be equal, original"
                        f"error message: {e}")
@@ -67,17 +81,24 @@ class DotInteraction(tf.keras.layers.Layer):
     # Interact features, select lower-triangular portion, and re-shape.
     xactions = tf.matmul(concat_features, concat_features, transpose_b=True)
     ones = tf.ones_like(xactions)
-    feature_dim = xactions.shape[-1]
     if self._self_interaction:
       # Selecting lower-triangular portion including the diagonal.
       lower_tri_mask = tf.linalg.band_part(ones, -1, 0)
-      out_dim = feature_dim * (feature_dim + 1) // 2
+      upper_tri_mask = ones - lower_tri_mask
+      out_dim = num_features * (num_features + 1) // 2
     else:
       # Selecting lower-triangular portion not included the diagonal.
       upper_tri_mask = tf.linalg.band_part(ones, 0, -1)
       lower_tri_mask = ones - upper_tri_mask
-      out_dim = feature_dim * (feature_dim - 1) // 2
-    activations = tf.boolean_mask(xactions, lower_tri_mask)
+      out_dim = num_features * (num_features - 1) // 2
+
+    if self._skip_gather:
+      # Setting upper tiangle part of the interaction matrix to zeros.
+      activations = tf.where(condition=tf.cast(upper_tri_mask, tf.bool),
+                             x=tf.zeros_like(xactions),
+                             y=xactions)
+      out_dim = num_features * num_features
+    else:
+      activations = tf.boolean_mask(xactions, lower_tri_mask)
     activations = tf.reshape(activations, (batch_size, out_dim))
     return activations
-

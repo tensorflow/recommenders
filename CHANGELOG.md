@@ -1,17 +1,21 @@
 # Changelog
 
-## [unreleased][unreleased]
+## [0.5.2][2021-07-15]
 
 ### Fixed
 
 -   Fixed error in default arguments to `tfrs.experimental.models.Ranking`
     (https://github.com/tensorflow/recommenders/issues/311).
+-   Fix TPUEmbedding layer to use named parameters.
 
 ### Added
 
 -   Added `batch_metrics` to `tfrs.tasks.Retrieval` for measuring how good the
     model is at picking out the true candidate for a query from other candidates
     in the batch.
+-   Added `tfrs.experimental.layers.embedding.PartialTPUEmbedding` layer, which
+    uses `tfrs.layers.embedding.TPUEmbedding` for large embedding lookups and
+    `tf.keras.layers.Embedding` for smaller embedding lookups.
 
 ## [0.5.1][2021-05-14]
 

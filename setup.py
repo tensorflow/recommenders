@@ -17,7 +17,7 @@
 import pathlib
 import setuptools
 
-VERSION = "0.5.1"
+VERSION = "0.5.2"
 
 long_description = (pathlib.Path(__file__).parent
                     .joinpath("README.md")

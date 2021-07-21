@@ -619,7 +619,6 @@ class ScaNN(TopK):
     self._k = k
     self._parallelize_batch_searches = parallelize_batch_searches
     self._num_reordering_candidates = num_reordering_candidates
-    self._candidates = None
     self._identifiers = None
 
     def build_searcher(candidates):
@@ -695,18 +694,9 @@ class ScaNN(TopK):
         dtype=identifiers.dtype,
         shape=identifiers.shape,
         initializer=tf.keras.initializers.Constant(
-          value=identifiers_initial_value),
+            value=identifiers_initial_value),
         trainable=False)
       self._identifiers.assign(identifiers)
-
-    if store_candidates:
-      self._candidates = self.add_weight(
-        name="candidates",
-        dtype=candidates.dtype,
-        shape=candidates.shape,
-        initializer=tf.keras.initializers.Zeros(),
-        trainable=False)
-      self._candidates.assign(candidates)
 
     self._reset_tf_function_cache()
 

@@ -211,20 +211,6 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
 
     self.run_save_and_restore_test(scann, query, 100)
 
-  def test_scann_dataset_arg_with_store_candidates(self):
-
-    num_candidates, num_queries = (100, 4)
-
-    rng = np.random.RandomState(42)
-    candidates = tf.data.Dataset.from_tensor_slices(
-        rng.normal(size=(num_candidates, 4)).astype(np.float32))
-    query = rng.normal(size=(num_queries, 4)).astype(np.float32)
-
-    scann = factorized_top_k.ScaNN()
-    scann.index(candidates.batch(100), store_candidates=True)
-
-    self.run_save_and_restore_test(scann, query, 100)
-
   @parameterized.parameters(factorized_top_k.ScaNN, factorized_top_k.BruteForce)
   def test_raise_on_incorrect_input_shape(
       self, layer_class: factorized_top_k.TopK):

@@ -73,3 +73,39 @@ landing_page:
         {% dynamic if request.tld != 'cn' %}
         <a class="colab-button" target="_blank" href="https://colab.research.google.com/github/tensorflow/recommenders/blob/main/docs/examples/quickstart.ipynb">Run in a <span>Notebook</span></a>
         {% dynamic endif %}
+
+  - classname: devsite-landing-row-cards
+    items:
+    - heading: "Introduction to TensorFlow Recommenders"
+      youtube_id: jz0-satrmrA
+      buttons:
+      - label: "Watch the introduction video"
+        path: https://www.youtube.com/watch?v=jz0-satrmrA&list=PLQY2H8rRoyvy2MiyUBz5RWZr5MPFkV3qz&index=4
+      - label: "Watch the video series"
+        path: https://goo.gle/3Bi8NUS
+    - heading: "TensorFlow Recommenders: Scalable retrieval and feature interaction modelling"
+      image_path: /resources/images/google-research-card-16x9.png
+      path: https://blog.tensorflow.org/2020/11/tensorflow-recommenders-scalable-retrieval-feature-interaction-modelling.html
+      buttons:
+      - label: "Read on TensorFlow blog"
+        path: https://blog.tensorflow.org/2020/11/tensorflow-recommenders-scalable-retrieval-feature-interaction-modelling.html
+    - heading: "Introducing TensorFlow Recommenders"
+      image_path: /resources/images/tf-logo-card-16x9.png
+      path: https://blog.tensorflow.org/2020/09/introducing-tensorflow-recommenders.html
+      buttons:
+      - label: "Read on TensorFlow blog"
+        path: https://blog.tensorflow.org/2020/09/introducing-tensorflow-recommenders.html
+  - classname: devsite-landing-row-cards
+    items:
+    - heading: "TensorFlow Recommenders on GitHub"
+      image_path: /resources/images/github-card-16x9.png
+      path: https://github.com/tensorflow/recommenders
+      buttons:
+      - label: "View on GitHub"
+        path: https://github.com/tensorflow/recommenders
+    - heading: ""
+      options:
+      - hidden
+    - heading: ""
+      options:
+      - hidden

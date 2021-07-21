@@ -646,8 +646,7 @@ class ScaNN(TopK):
       self,
       candidates: Union[tf.Tensor, tf.data.Dataset],
       identifiers: Optional[Union[tf.Tensor,
-                                  tf.data.Dataset]] = None,
-      store_candidates = False) -> "ScaNN":
+                                  tf.data.Dataset]] = None) -> "ScaNN":
     """Builds the retrieval index.
 
     When called multiple times the existing index will be dropped and a new one
@@ -659,10 +658,7 @@ class ScaNN(TopK):
         given, these will be used to as identifiers of top candidates returned
         when performing searches. If not given, indices into the candidates
         tensor will be given instead.
-      store_candidates: Optional boolean that controls whether passed candidate
-        embeddings are stored in this layer. If true, the embeddings is stored
-        in this layer, but it consumes more memory. The default is false and the
-        embeddings is not stored.
+
     Raises:
       ValueError on incorrectly shaped inputs.
 

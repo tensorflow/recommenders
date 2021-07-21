@@ -67,7 +67,7 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
 
     path = os.path.join(self.get_temp_dir(), "layer")
     layer.save(
-      path, options=tf.saved_model.SaveOptions(namespace_whitelist=["Scann"]))
+        path, options=tf.saved_model.SaveOptions(namespace_whitelist=["Scann"]))
     restored = tf.keras.models.load_model(path)
 
     for _ in range(num):
@@ -202,7 +202,7 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
 
     rng = np.random.RandomState(42)
     candidates = tf.data.Dataset.from_tensor_slices(
-      rng.normal(size=(num_candidates, 4)).astype(np.float32))
+        rng.normal(size=(num_candidates, 4)).astype(np.float32))
     query = rng.normal(size=(num_queries, 4)).astype(np.float32)
     identifiers = tf.data.Dataset.from_tensor_slices(np.arange(num_candidates))
 
@@ -217,7 +217,7 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
 
     rng = np.random.RandomState(42)
     candidates = tf.data.Dataset.from_tensor_slices(
-      rng.normal(size=(num_candidates, 4)).astype(np.float32))
+        rng.normal(size=(num_candidates, 4)).astype(np.float32))
     query = rng.normal(size=(num_queries, 4)).astype(np.float32)
 
     scann = factorized_top_k.ScaNN()

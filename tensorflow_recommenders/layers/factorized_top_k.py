@@ -690,12 +690,12 @@ class ScaNN(TopK):
       # We need any value that has the correct dtype.
       identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)
       self._identifiers = self.add_weight(
-        name="identifiers",
-        dtype=identifiers.dtype,
-        shape=identifiers.shape,
-        initializer=tf.keras.initializers.Constant(
-            value=identifiers_initial_value),
-        trainable=False)
+          name="identifiers",
+          dtype=identifiers.dtype,
+          shape=identifiers.shape,
+          initializer=tf.keras.initializers.Constant(
+              value=identifiers_initial_value),
+          trainable=False)
       self._identifiers.assign(identifiers)
 
     self._reset_tf_function_cache()

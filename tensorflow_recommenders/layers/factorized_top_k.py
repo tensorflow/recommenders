@@ -240,6 +240,20 @@ class TopK(tf.keras.Model, abc.ABC):
       self.query_with_exclusions = tf.function(
           self.query_with_exclusions.python_function)
 
+  def _compute_score(self, queries: tf.Tensor,
+                     candidates: tf.Tensor) -> tf.Tensor:
+    """Computes the standard dot product score from queries and candidates.
+
+    Args:
+      queries: Tensor of queries for which the candidates are to be retrieved.
+      candidates: Tensor of candidate embeddings.
+
+    Returns:
+      The dot product of queries and candidates.
+    """
+
+    return tf.matmul(queries, candidates, transpose_b=True)
+
 
 class Streaming(TopK):
   """Retrieves K highest scoring items and their ids from a large dataset.
@@ -348,7 +362,8 @@ class Streaming(TopK):
     def top_scores(candidate_index: tf.Tensor,
                    candidate_batch: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
       """Computes top scores and indices for a batch of candidates."""
-      scores = tf.matmul(queries, candidate_batch, transpose_b=True)
+
+      scores = self._compute_score(queries, candidate_batch)
 
       if self._handle_incomplete_batches:
         k_ = tf.math.minimum(k, tf.shape(scores)[1])
@@ -546,7 +561,7 @@ class BruteForce(TopK):
     if self.query_model is not None:
       queries = self.query_model(queries)
 
-    scores = tf.linalg.matmul(queries, self._candidates, transpose_b=True)
+    scores = self._compute_score(queries, self._candidates)
 
     values, indices = tf.math.top_k(scores, k=k)
 

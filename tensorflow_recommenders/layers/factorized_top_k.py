@@ -685,7 +685,6 @@ class ScaNN(TopK):
     self._serialized_searcher = self._build_searcher(
         candidates).serialize_to_module()
 
-
     if identifiers is not None:
       # We need any value that has the correct dtype.
       identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)

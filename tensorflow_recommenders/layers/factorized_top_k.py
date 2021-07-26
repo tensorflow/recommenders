@@ -634,6 +634,7 @@ class ScaNN(TopK):
     self._k = k
     self._parallelize_batch_searches = parallelize_batch_searches
     self._num_reordering_candidates = num_reordering_candidates
+    self._identifiers = None
 
     def build_searcher(candidates):
       builder = scann_ops.builder(
@@ -682,9 +683,6 @@ class ScaNN(TopK):
     if isinstance(candidates, tf.data.Dataset):
       candidates = tf.concat(list(candidates), axis=0)  # pytype: disable=wrong-arg-types
 
-    if identifiers is None:
-      identifiers = tf.range(candidates.shape[0])
-
     if isinstance(identifiers, tf.data.Dataset):
       identifiers = tf.concat(list(identifiers), axis=0)  # pytype: disable=wrong-arg-type
 
@@ -692,7 +690,7 @@ class ScaNN(TopK):
       raise ValueError(
           f"The candidates tensor must be 2D (got {candidates.shape}).")
 
-    if candidates.shape[0] != identifiers.shape[0]:
+    if identifiers is not None and candidates.shape[0] != identifiers.shape[0]:
       raise ValueError(
           "The candidates and identifiers tensors must have the same number of rows "
           f"(got {candidates.shape[0]} candidates rows and {identifiers.shape[0]} "
@@ -702,25 +700,17 @@ class ScaNN(TopK):
     self._serialized_searcher = self._build_searcher(
         candidates).serialize_to_module()
 
-    # We need any value that has the correct dtype.
-    identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)
-
-    self._identifiers = self.add_weight(
-        name="identifiers",
-        dtype=identifiers.dtype,
-        shape=identifiers.shape,
-        initializer=tf.keras.initializers.Constant(
-            value=identifiers_initial_value),
-        trainable=False)
-    self._candidates = self.add_weight(
-        name="candidates",
-        dtype=candidates.dtype,
-        shape=candidates.shape,
-        initializer=tf.keras.initializers.Zeros(),
-        trainable=False)
-
-    self._identifiers.assign(identifiers)
-    self._candidates.assign(candidates)
+    if identifiers is not None:
+      # We need any value that has the correct dtype.
+      identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)
+      self._identifiers = self.add_weight(
+          name="identifiers",
+          dtype=identifiers.dtype,
+          shape=identifiers.shape,
+          initializer=tf.keras.initializers.Constant(
+              value=identifiers_initial_value),
+          trainable=False)
+      self._identifiers.assign(identifiers)
 
     self._reset_tf_function_cache()
 
@@ -754,8 +744,7 @@ class ScaNN(TopK):
       raise ValueError("The `index` method must be called first to "
                        "create the retrieval index.")
 
-    searcher = scann_ops.searcher_from_module(self._serialized_searcher,
-                                             self._candidates)
+    searcher = scann_ops.searcher_from_module(self._serialized_searcher)
 
     if self.query_model is not None:
       queries = self.query_model(queries)
@@ -778,5 +767,8 @@ class ScaNN(TopK):
     else:
       raise ValueError(
           f"Queries must be of rank 2 or 1, got {len(queries.shape)}.")
+
+    if self._identifiers is None:
+      return distances, indices
 
     return distances, tf.gather(self._identifiers, indices)

@@ -61,6 +61,20 @@ def test_cases(
 
 class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
 
+  def run_save_and_restore_test(self, layer, query, num):
+    for _ in range(num):
+      pre_serialization_results = layer(query)
+
+    path = os.path.join(self.get_temp_dir(), "layer")
+    layer.save(
+        path, options=tf.saved_model.SaveOptions(namespace_whitelist=["Scann"]))
+    restored = tf.keras.models.load_model(path)
+
+    for _ in range(num):
+      post_serialization_results = restored(tf.constant(query))
+
+    self.assertAllEqual(post_serialization_results, pre_serialization_results)
+
   def run_top_k_test(self,
                      layer_class,
                      k,
@@ -166,38 +180,36 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     scann = factorized_top_k.ScaNN()
     scann.index(candidates, candidate_names)
 
-    for _ in range(100):
-      pre_serialization_results = scann(query[:2])
-
-    path = os.path.join(self.get_temp_dir(), "query_model")
-    scann.save(
-        path,
-        options=tf.saved_model.SaveOptions(namespace_whitelist=["Scann"]))
-    loaded = tf.keras.models.load_model(path)
-
-    for _ in range(100):
-      post_serialization_results = loaded(tf.constant(query[:2]))
-
-    self.assertAllEqual(post_serialization_results, pre_serialization_results)
+    self.run_save_and_restore_test(scann, query, 100)
 
   def test_scann_dataset_arg_no_identifiers(self):
 
-    num_candidates = 100
-    candidates = tf.data.Dataset.from_tensor_slices(
-        np.random.normal(size=(num_candidates, 4)).astype(np.float32))
+    num_candidates, num_queries = (100, 4)
 
-    index = factorized_top_k.ScaNN()
-    index.index(candidates.batch(100))
+    rng = np.random.RandomState(42)
+    candidates = tf.data.Dataset.from_tensor_slices(
+        rng.normal(size=(num_candidates, 4)).astype(np.float32))
+    query = rng.normal(size=(num_queries, 4)).astype(np.float32)
+
+    scann = factorized_top_k.ScaNN()
+    scann.index(candidates.batch(100))
+
+    self.run_save_and_restore_test(scann, query, 100)
 
   def test_scann_dataset_arg_with_identifiers(self):
 
-    num_candidates = 100
+    num_candidates, num_queries = (100, 4)
+
+    rng = np.random.RandomState(42)
     candidates = tf.data.Dataset.from_tensor_slices(
-        np.random.normal(size=(num_candidates, 4)).astype(np.float32))
+        rng.normal(size=(num_candidates, 4)).astype(np.float32))
+    query = rng.normal(size=(num_queries, 4)).astype(np.float32)
     identifiers = tf.data.Dataset.from_tensor_slices(np.arange(num_candidates))
 
-    index = factorized_top_k.ScaNN()
-    index.index(candidates.batch(100), identifiers)
+    scann = factorized_top_k.ScaNN()
+    scann.index(candidates.batch(100), identifiers)
+
+    self.run_save_and_restore_test(scann, query, 100)
 
   @parameterized.parameters(factorized_top_k.ScaNN, factorized_top_k.BruteForce)
   def test_raise_on_incorrect_input_shape(

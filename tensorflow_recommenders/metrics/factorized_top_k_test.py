@@ -52,7 +52,7 @@ class FactorizedTopKTest(tf.test.TestCase, parameterized.TestCase):
     candidates = tf.data.Dataset.from_tensor_slices(candidates).batch(32)
 
     if top_k_layer is not None:
-      candidates = top_k_layer().index(candidates)
+      candidates = top_k_layer().index_from_dataset(candidates)
 
     metric = metrics.FactorizedTopK(
         candidates=candidates,

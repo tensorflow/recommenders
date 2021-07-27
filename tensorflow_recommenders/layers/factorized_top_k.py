@@ -110,6 +110,28 @@ def _exclude(scores: tf.Tensor, identifiers: tf.Tensor, exclude: tf.Tensor,
                           indices), _take_along_axis(identifiers, indices)
 
 
+def _check_candidates_with_identifiers(candidates: tf.data.Dataset) -> None:
+  """Checks preconditions the dataset used for indexing."""
+
+  spec = candidates.element_spec
+
+  if isinstance(spec, tuple):
+    if len(spec) != 2:
+      raise ValueError(
+          "The dataset must yield candidate embeddings or "
+          "tuples of (candidate embeddings, candidate identifiers). "
+          f"Got {spec} instead."
+      )
+
+    identifiers_spec, candidates_spec = spec
+
+    if candidates_spec.shape[0] != identifiers_spec.shape[0]:
+      raise ValueError(
+          "Candidates and identifiers have to have the same batch dimension. "
+          f"Got {candidates_spec.shape[0]} and {identifiers_spec.shape[0]}."
+      )
+
+
 class TopK(tf.keras.Model, abc.ABC):
   """Interface for top K layers.
 
@@ -130,26 +152,68 @@ class TopK(tf.keras.Model, abc.ABC):
   @abc.abstractmethod
   def index(
       self,
-      candidates: Union[tf.Tensor, tf.data.Dataset],
-      identifiers: Optional[Union[tf.Tensor,
-                                  tf.data.Dataset]] = None) -> "TopK":
+      candidates: tf.Tensor,
+      identifiers: Optional[tf.Tensor] = None) -> "TopK":
     """Builds the retrieval index.
 
     When called multiple times the existing index will be dropped and a new one
     created.
 
     Args:
-      candidates: Matrix (or dataset) of candidate embeddings.
-      identifiers: Optional tensor (or dataset) of candidate identifiers. If
-        given, these will be used to as identifiers of top candidates returned
+      candidates: Matrix of candidate embeddings.
+      identifiers: Optional tensor of candidate identifiers. If
+        given, these will be used as identifiers of top candidates returned
         when performing searches. If not given, indices into the candidates
-        tensor will be given instead.
+        tensor will be returned instead.
 
     Returns:
       Self.
     """
 
     raise NotImplementedError()
+
+  def index_from_dataset(
+      self,
+      candidates: tf.data.Dataset
+  ) -> "TopK":
+    """Builds the retrieval index.
+
+    When called multiple times the existing index will be dropped and a new one
+    created.
+
+    Args:
+      candidates: Dataset of candidate embeddings or (candidate identifier,
+        candidate embedding) pairs. If the dataset returns tuples,
+        the identifiers will be used as identifiers of top candidates
+        returned when performing searches. If not given, indices into the
+        candidates dataset will be given instead.
+
+    Returns:
+      Self.
+
+    Raises:
+      ValueError if the dataset does not have the correct structure.
+    """
+
+    _check_candidates_with_identifiers(candidates)
+
+    spec = candidates.element_spec
+
+    if isinstance(spec, tuple):
+      identifiers_and_candidates = list(candidates)
+      candidates = tf.concat(
+          [embeddings for _, embeddings in identifiers_and_candidates],
+          axis=0
+      )
+      identifiers = tf.concat(
+          [identifiers for identifiers, _ in identifiers_and_candidates],
+          axis=0
+      )
+    else:
+      candidates = tf.concat(list(candidates), axis=0)
+      identifiers = None
+
+    return self.index(candidates, identifiers)
 
   @abc.abstractmethod
   def call(
@@ -293,59 +357,38 @@ class Streaming(TopK):
 
     self.query_model = query_model
     self._candidates = None
-    self._identifiers = None
     self._handle_incomplete_batches = handle_incomplete_batches
     self._num_parallel_calls = num_parallel_calls
     self._sorted = sorted_order
 
     self._counter = self.add_weight("counter", dtype=tf.int32, trainable=False)
 
+  def index_from_dataset(
+      self,
+      candidates: tf.data.Dataset
+  ) -> "TopK":
+
+    _check_candidates_with_identifiers(candidates)
+
+    self._candidates = candidates
+
+    return self
+
   def index(self,
             candidates: tf.data.Dataset,
             identifiers: Optional[tf.data.Dataset] = None) -> "Streaming":
-    """Builds the retrieval index.
+    """Not implemented. Please call `index_from_dataset` instead."""
 
-    When called multiple times the existing index will be dropped and a new one
-    created.
-
-    Args:
-      candidates: Matrix (or dataset) of candidate embeddings.
-      identifiers: Optional tensor (or dataset) of candidate identifiers. If
-        given, these will be used to as identifiers of top candidates returned
-        when performing searches. If not given, indices into the candidates
-        tensor will be given instead.
-
-    Returns:
-      Self.
-    """
-
-    self._candidates = candidates
-    self._identifiers = identifiers
-
-    return self
+    raise NotImplementedError(
+        "The streaming top k class only accepts datasets. "
+        "Please call `index_from_dataset` instead."
+    )
 
   def call(
       self,
       queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
       k: Optional[int] = None,
   ) -> Tuple[tf.Tensor, tf.Tensor]:
-    """Computes K highest scores and candidate indices for a given query.
-
-    Args:
-      queries: Query features. If `query_model` was provided in the constructor,
-        these can be raw query features that will be processed by the query
-        model before performing retrieval. If `query_model` was not provided,
-        these should be pre-computed query embeddings.
-      k: Number of elements to retrieve. If not set, will default to the k set
-        in the constructor.
-
-    Returns:
-      Tuple of [query_batch_size, k] tensor of top scores for each query and
-      [query_batch_size, k] tensor of indices for highest scoring candidates.
-
-    Raises:
-      ValueError if `index` has not been called.
-    """
 
     k = k if k is not None else self._k
 
@@ -407,11 +450,6 @@ class Streaming(TopK):
 
       return scores, tf.gather(joined_indices, indices, batch_dims=1)
 
-    # Initialize the state with dummy scores and candidate indices.
-    index_dtype = self._identifiers.element_spec.dtype if self._identifiers is not None else tf.int32
-    initial_state = (tf.zeros((tf.shape(queries)[0], 0), dtype=tf.float32),
-                     tf.zeros((tf.shape(queries)[0], 0), dtype=index_dtype))
-
     def enumerate_rows(batch: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
       """Enumerates rows in each batch using a total element counter."""
 
@@ -420,14 +458,21 @@ class Streaming(TopK):
 
       return tf.range(starting_counter, end_counter), batch
 
-    if self._identifiers is not None:
-      dataset = tf.data.Dataset.zip((self._identifiers, self._candidates))
+    if not isinstance(self._candidates.element_spec, tuple):
+      # We don't have identifiers.
+      candidates = self._candidates.map(enumerate_rows)
+      index_dtype = tf.int32
     else:
-      dataset = self._candidates.map(enumerate_rows)
+      candidates = self._candidates
+      index_dtype = self._candidates.element_spec[0].dtype
+
+    # Initialize the state with dummy scores and candidate indices.
+    initial_state = (tf.zeros((tf.shape(queries)[0], 0), dtype=tf.float32),
+                     tf.zeros((tf.shape(queries)[0], 0), dtype=index_dtype))
 
     with _wrap_batch_too_small_error(k):
       results = (
-          dataset
+          candidates
           # Compute scores over all candidates, and select top k in each batch.
           # Each element is a ([query_batch_size, k] tensor,
           # [query_batch_size, k] tensor) of scores and indices (where query_
@@ -464,36 +509,12 @@ class BruteForce(TopK):
 
   def index(
       self,
-      candidates: Union[tf.Tensor, tf.data.Dataset],
-      identifiers: Optional[Union[tf.Tensor, tf.data.Dataset]] = None
+      candidates: tf.Tensor,
+      identifiers: Optional[tf.Tensor] = None
   ) -> "BruteForce":
-    """Builds the retrieval index.
-
-    When called multiple times the existing index will be dropped and a new one
-    created.
-
-    Args:
-      candidates: Matrix (or dataset) of candidate embeddings.
-      identifiers: Optional tensor (or dataset) of candidate identifiers. If
-        given, these will be used to as identifiers of top candidates returned
-        when performing searches. If not given, indices into the candidates
-        tensor will be given instead.
-
-    Raises:
-      ValueError on incorrectly shaped inputs.
-
-    Returns:
-      Self.
-    """
-
-    if isinstance(candidates, tf.data.Dataset):
-      candidates = tf.concat(list(candidates), axis=0)  # pytype: disable=wrong-arg-types
 
     if identifiers is None:
       identifiers = tf.range(candidates.shape[0])
-
-    if isinstance(identifiers, tf.data.Dataset):
-      identifiers = tf.concat(list(identifiers), axis=0)  # pytype: disable=wrong-arg-types
 
     if tf.rank(candidates) != 2:
       raise ValueError(
@@ -535,22 +556,6 @@ class BruteForce(TopK):
       queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
       k: Optional[int] = None,
   ) -> Tuple[tf.Tensor, tf.Tensor]:
-    """Query the index.
-
-    Args:
-      queries: Query features. If `query_model` was provided in the constructor,
-        these can be raw query features that will be processed by the query
-        model before performing retrieval. If `query_model` was not provided,
-        these should be pre-computed query embeddings.
-      k: The number of candidates to retrieve. If not supplied, defaults to the
-        k value supplied in the constructor.
-
-    Returns:
-      Tuple of (top candidate scores, top candidate identifiers).
-
-    Raises:
-      ValueError if `index` has not been called.
-    """
 
     k = k if k is not None else self._k
 
@@ -658,33 +663,8 @@ class ScaNN(TopK):
 
   def index(
       self,
-      candidates: Union[tf.Tensor, tf.data.Dataset],
-      identifiers: Optional[Union[tf.Tensor,
-                                  tf.data.Dataset]] = None) -> "ScaNN":
-    """Builds the retrieval index.
-
-    When called multiple times the existing index will be dropped and a new one
-    created.
-
-    Args:
-      candidates: Matrix (or dataset) of candidate embeddings.
-      identifiers: Optional tensor (or dataset) of candidate identifiers. If
-        given, these will be used to as identifiers of top candidates returned
-        when performing searches. If not given, indices into the candidates
-        tensor will be given instead.
-
-    Raises:
-      ValueError on incorrectly shaped inputs.
-
-    Returns:
-      Self.
-    """
-
-    if isinstance(candidates, tf.data.Dataset):
-      candidates = tf.concat(list(candidates), axis=0)  # pytype: disable=wrong-arg-types
-
-    if isinstance(identifiers, tf.data.Dataset):
-      identifiers = tf.concat(list(identifiers), axis=0)  # pytype: disable=wrong-arg-type
+      candidates: tf.Tensor,
+      identifiers: Optional[tf.Tensor] = None) -> "ScaNN":
 
     if len(candidates.shape) != 2:
       raise ValueError(
@@ -719,24 +699,6 @@ class ScaNN(TopK):
   def call(self,
            queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
            k: Optional[int] = None) -> Tuple[tf.Tensor, tf.Tensor]:
-    """Query the index.
-
-    Args:
-      queries: Query features. If `query_model` was provided in the constructor,
-        these can be raw query features that will be processed by the query
-        model before performing retrieval. If `query_model` was not provided,
-        these should be pre-computed query embeddings.
-      k: The number of candidates to retrieve. Defaults to constructor `k`
-        parameter if not supplied.
-
-    Returns:
-      Tuple of (top candidate scores, top candidate identifiers).
-
-    Raises:
-      ValueError if `index` has not been called.
-      ValueError if `queries` is not a tensor (after being passed through
-        the query model) or is not rank 2.
-    """
 
     k = k if k is not None else self._k
 

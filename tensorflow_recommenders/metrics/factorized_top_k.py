@@ -58,7 +58,8 @@ class FactorizedTopK(tf.keras.layers.Layer):
       ]
 
     if isinstance(candidates, tf.data.Dataset):
-      candidates = layers.factorized_top_k.Streaming(k=k).index(candidates)
+      candidates = layers.factorized_top_k.Streaming(k=k).index_from_dataset(
+          candidates)
 
     self._k = k
     self._candidates = candidates

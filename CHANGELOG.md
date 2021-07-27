@@ -1,5 +1,14 @@
 # Changelog
 
+## [unreleased][unreleased]
+
+### Breaking changes
+
+-   `TopK` layer indexing API changed. Indexing with datasets is now done via
+    the `index_from_dataset` method. This change reduces the possibility of
+    misaligning embeddings and candidate identifiers when indexing via
+    indeterministic datasets.
+
 ## [0.5.2][2021-07-15]
 
 ### Fixed

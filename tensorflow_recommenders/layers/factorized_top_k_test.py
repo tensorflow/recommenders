@@ -120,17 +120,16 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     if indices_dtype is not None:
       identifiers = tf.data.Dataset.from_tensor_slices(candidate_indices).batch(
           batch_size)
-    else:
-      identifiers = None
+      candidates = tf.data.Dataset.zip((identifiers, candidates))
 
     # Call twice to ensure the results are repeatable.
     for _ in range(2):
       if use_exclusions:
-        layer.index(candidates, identifiers)
+        layer.index_from_dataset(candidates)
         top_scores, top_indices = layer.query_with_exclusions(
             query, exclude_identifiers)
       else:
-        layer.index(candidates, identifiers)
+        layer.index_from_dataset(candidates)
         top_scores, top_indices = layer(query)
 
     self.assertAllEqual(top_scores.shape, expected_top_scores.shape)
@@ -192,7 +191,7 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     query = rng.normal(size=(num_queries, 4)).astype(np.float32)
 
     scann = factorized_top_k.ScaNN()
-    scann.index(candidates.batch(100))
+    scann.index_from_dataset(candidates.batch(100))
 
     self.run_save_and_restore_test(scann, query, 100)
 
@@ -206,10 +205,10 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     query = rng.normal(size=(num_queries, 4)).astype(np.float32)
     identifiers = tf.data.Dataset.from_tensor_slices(np.arange(num_candidates))
 
-    scann = factorized_top_k.ScaNN()
-    scann.index(candidates.batch(100), identifiers)
+    index = factorized_top_k.ScaNN()
+    index.index_from_dataset(identifiers.zip(candidates).batch(100))
 
-    self.run_save_and_restore_test(scann, query, 100)
+    self.run_save_and_restore_test(index, query, 100)
 
   @parameterized.parameters(factorized_top_k.ScaNN, factorized_top_k.BruteForce)
   def test_raise_on_incorrect_input_shape(
@@ -223,7 +222,9 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
 
     with self.assertRaises(ValueError):
       index = layer_class()
-      index.index(candidates.batch(100), identifiers)
+      index.index_from_dataset(
+          tf.data.Dataset.zip((identifiers.batch(20), candidates.batch(100)))
+      )
 
   @parameterized.parameters(test_cases())
   def test_scann_top_k(self, k, batch_size, num_queries, num_candidates,

@@ -64,7 +64,8 @@ class CompositeOptimizer(tf.keras.optimizers.Optimizer):
       self._track_trackable(optimizer, name=f"Optimizer{i}")
 
   def apply_gradients(self, grads_and_vars: Sequence[Tuple[Tensor, Tensor]],
-                      name: Optional[str] = None) -> None:
+                      name: Optional[str] = None,
+                      experimental_aggregate_gradients: bool = True) -> None:
     """See base class."""
     var_optimizer_dict = {}
 
@@ -87,7 +88,10 @@ class CompositeOptimizer(tf.keras.optimizers.Optimizer):
                          f"This would cause it to be not trained.")
 
     for optimizer, opt_grads_and_vars in optimizer_grads_and_vars.items():
-      optimizer.apply_gradients(opt_grads_and_vars, name=name)
+      optimizer.apply_gradients(
+          opt_grads_and_vars,
+          name=name,
+          experimental_aggregate_gradients=experimental_aggregate_gradients)
 
   def get_config(self):
     raise NotImplementedError("CompositeOptimizer cannot be serialized because"

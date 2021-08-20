@@ -2,6 +2,10 @@
 
 ## [unreleased][unreleased]
 
+### Changed
+
+-   Pinned TensorFlow to >= 2.6.0, which works with Scann 1.2.3.
+
 ### Breaking changes
 
 -   `TopK` layer indexing API changed. Indexing with datasets is now done via

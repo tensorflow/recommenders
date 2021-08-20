@@ -42,7 +42,7 @@ _DUMMY_NAME = "tpu_embedding_helper_dummy"
 
 
 def _get_batch_size_from_input_shapes(input_shape):
-  """From a list of input shapes, gets the global batch size.
+  """From a list of input shapes, gets the per core size.
 
   We want to extract the first dimension for each TensorShape in input_shape and
   ensure that:
@@ -57,7 +57,7 @@ def _get_batch_size_from_input_shapes(input_shape):
     input_shape: A nested structure of `TensorShape`s.
 
   Returns:
-    The global batch size.
+    The per core batch size.
   """
   flattened_input_shape = tf.nest.flatten(input_shape)
   if not flattened_input_shape:
@@ -166,10 +166,12 @@ def _clone_and_prepare_features(feature_config):
             combiner=config.table.combiner,
             name=config.table.name))
 
-    output_objects.append(tf.tpu.experimental.embedding.FeatureConfig(
-        table=table_configs[config.table],
-        max_sequence_length=config.max_sequence_length,
-        name=config.name))
+    output_objects.append(
+        tf.tpu.experimental.embedding.FeatureConfig(
+            table=table_configs[config.table],
+            max_sequence_length=config.max_sequence_length,
+            validate_weights_and_indices=config.validate_weights_and_indices,
+            name=config.name))
 
   # Fix up the optimizers.
   for _, new_table in table_configs.items():
@@ -210,10 +212,12 @@ def _update_table_configs(feature_config, table_config_map):
     if config.table not in table_config_dict:
       raise ValueError("TableConfig %s does not match any of the TableConfigs "
                        "used to configure this layer." % config.table)
-    output_objects.append(tf.tpu.experimental.embedding.FeatureConfig(
-        table=table_config_dict[config.table],
-        max_sequence_length=config.max_sequence_length,
-        name=config.name))
+    output_objects.append(
+        tf.tpu.experimental.embedding.FeatureConfig(
+            table=table_config_dict[config.table],
+            max_sequence_length=config.max_sequence_length,
+            validate_weights_and_indices=config.validate_weights_and_indices,
+            name=config.name))
 
   return tf.nest.pack_sequence_as(feature_config, output_objects)
 
@@ -387,7 +391,7 @@ class TPUEmbedding(tf.keras.layers.Layer):
       strategy.distribute_datasets_from_function(
           dataset_fn=...,
           options=tf.distribute.InputOptions(
-              experimental_prefetch_to_device=False))
+              experimental_fetch_to_device=False))
   dataset_iterator = iter(distributed_dataset)
   ```
 
@@ -592,9 +596,13 @@ class TPUEmbedding(tf.keras.layers.Layer):
         computations will overlap with the TensorCore computations (and hence
         will be one step old with potential correctness drawbacks). Set to True
         for improved performance.
-      batch_size: If set, this will be used as the global batch size and
+      batch_size: If set, this will be used as the per core batch size and
         overrides the autodetection of the batch size from the layer's input.
         This is necesarry if all inputs to the layer's call are SparseTensors.
+        Note that this can be computed via
+        ```
+        batch_size = global_batch_size/strategy.num_replicas_in_sync
+        ```
     """
     super().__init__()
     self._feature_config, self._table_config_map = (
@@ -755,10 +763,16 @@ class TPUEmbedding(tf.keras.layers.Layer):
           serving_config)
 
     if not self._using_tpu and _is_tpu_strategy(tf.distribute.get_strategy()):
-      raise RuntimeError("Layer is created under strategy %s but is being "
-                         "called under a TPUStrategy. Please create the layer "
-                         "under a TPUStrategy if you wish to run the layer on "
-                         "TPU." % self.strategy)
+      raise RuntimeError(f"Layer is created under strategy {self._strategy} "
+                         "but is being called under a TPUStrategy. Please "
+                         "create the layer under a TPUStrategy if you wish to "
+                         "run the layer on TPU.")
+    if self._using_tpu and not _is_tpu_strategy(tf.distribute.get_strategy()):
+      raise RuntimeError(f"Layer is created under strategy {self._strategy} "
+                         "but is being called under strategy "
+                         f"{tf.distribute.get_strategy()}. Please use "
+                         "strategy.run when calling this layer.")
+
     if self._using_tpu and _is_tpu_strategy(tf.distribute.get_strategy()):
       return self._tpu_embedding_lookup(features, weights)
     else:
@@ -859,7 +873,7 @@ def translate_keras_optimizer(optimizer):
     #     ops in the function are placed on the TPU). In this case the return
     #     type should generally be a tensor.
     # 2.  If it was a LearningRateSchedule, get_config calls
-    #     serialize_keras_object on the schedule oject. In this case the return
+    #     serialize_keras_object on the schedule object. In this case the return
     #     type is a dict.
     # 3.  A python numeric constant or something convertible to one.
     if isinstance(config["learning_rate"], tf.Tensor):

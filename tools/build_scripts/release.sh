@@ -2,7 +2,7 @@
 
 set -e   # fail and exit on any command erroring
 
-TF_VERSION="2.3.0"
+TF_VERSION="2.6.0"
 PY_VERSION="3.6"
 
 GIT_COMMIT_ID=${1:-""}

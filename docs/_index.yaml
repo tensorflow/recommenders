@@ -64,7 +64,9 @@ landing_page:
 
         # Set up retrieval using trained representations.
         index = tfrs.layers.ann.BruteForce(model.user_model)
-        index.index(movies.batch(100).map(model.movie_model), movies)
+        index.index_from_dataset(
+            movies.batch(100).map(lambda title: (title, model.movie_model(title)))
+        )
 
         # Get recommendations.
         _, titles = index(np.array(["42"]))

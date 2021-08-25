@@ -104,7 +104,7 @@ class Cross(tf.keras.layers.Layer):
 
     self._supports_masking = True
 
-    if self._diag_scale < 0:
+    if self._diag_scale < 0:  # pytype: disable=unsupported-operands
       raise ValueError(
           "`diag_scale` should be non-negative. Got `diag_scale` = {}".format(
               self._diag_scale))

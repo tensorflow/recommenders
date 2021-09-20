@@ -39,6 +39,7 @@ setuptools.setup(
             "fire",
             "annoy",
             "scann == 1.2.*",
+            "tensorflow-ranking"
         ],
     },
     # PyPI package information.

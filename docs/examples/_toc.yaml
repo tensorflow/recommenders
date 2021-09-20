@@ -25,3 +25,5 @@ toc:
   path: /recommenders/examples/dcn
 - title: "Efficient serving"
   path: /recommenders/examples/efficient_serving
+- title: "Listwise ranking"
+  path: /recommenders/examples/listwise_ranking

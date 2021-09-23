@@ -8,6 +8,8 @@ toc:
     path: /recommenders/examples/basic_retrieval
   - title: "Recommending movies: ranking"
     path: /recommenders/examples/basic_ranking
+  - title: "Retrieval with distribution strategy"
+    path: /recommenders/examples/diststrat_retrieval
 - title: "Using rich features"
   style: accordion
   section:

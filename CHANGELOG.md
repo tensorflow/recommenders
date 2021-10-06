@@ -1,5 +1,27 @@
 # Changelog
 
+## [unreleased][unreleased]
+
+A number of changes to make factorized top-K metric computation more accurate
+and less prone to user error.
+
+### Breaking changes
+
+-   `tfrs.metrics.FactorizedTopK` requires the candidate ids for positive
+    candidates to be supplied when using approximate top-K sources. Each top-K
+    layer now has an `exact` method to broadcast its ability to return exact or
+    approximate top-K results.
+-   Removed `metrics` constructor parameter for `tfrs.metrics.FactorizedTopK`.
+    `FactorizedTopK` only makes sense with top-k metrics, and this change
+    enforces this.
+-   Replaced the `k` constructor argument in `tfrs.metrics.FactorizedTopK` with
+    `ks`: a list of `k` values at which to compute the top k metric.
+
+### Changed
+
+-   The `tfrs.metrics.FactorizedTopK` metric can now compute candidate-id based
+    metrics when given the `true_candidate_ids` argument in its `call` method.
+
 ## [0.6.0][2021-08-23]
 
 ### Changed

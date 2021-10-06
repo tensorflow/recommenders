@@ -288,6 +288,19 @@ class TopK(tf.keras.Model, abc.ABC):
     x, y = self(queries=queries, k=adjusted_k)
     return _exclude(x, y, exclude=exclusions, k=k)
 
+  @abc.abstractmethod
+  def is_exact(self) -> bool:
+    """Indicates whether the results returned by the layer are exact.
+
+    Some layers may return approximate scores: for example, the ScaNN layer
+    may return approximate results.
+
+    Returns:
+      True if the layer returns exact results, and False otherwise.
+    """
+
+    raise NotImplementedError()
+
   def _reset_tf_function_cache(self):
     """Resets the tf.function cache.
 
@@ -484,6 +497,9 @@ class Streaming(TopK):
 
     return results
 
+  def is_exact(self) -> bool:
+    return True
+
 
 class BruteForce(TopK):
   """Brute force retrieval."""
@@ -572,6 +588,9 @@ class BruteForce(TopK):
 
     return values, tf.gather(self._identifiers, indices)
 
+  def is_exact(self) -> bool:
+    return True
+
 
 class ScaNN(TopK):
   """ScaNN approximate retrieval index for a factorized retrieval model.
@@ -597,6 +616,7 @@ class ScaNN(TopK):
                distance_measure: Text = "dot_product",
                num_leaves: int = 100,
                num_leaves_to_search: int = 10,
+               training_iterations: int = 12,
                dimensions_per_block: int = 2,
                num_reordering_candidates: Optional[int] = None,
                parallelize_batch_searches: bool = True,
@@ -612,6 +632,8 @@ class ScaNN(TopK):
       distance_measure: Distance metric to use.
       num_leaves: Number of leaves.
       num_leaves_to_search: Number of leaves to search.
+      training_iterations: Number of training iterations when performing tree
+        building.
       dimensions_per_block: Controls the dataset compression ratio. A higher
         number results in greater compression, leading to faster scoring but
         less accuracy and more memory usage.
@@ -639,6 +661,7 @@ class ScaNN(TopK):
     self._k = k
     self._parallelize_batch_searches = parallelize_batch_searches
     self._num_reordering_candidates = num_reordering_candidates
+    self._training_iterations = training_iterations
     self._identifiers = None
 
     def build_searcher(candidates):
@@ -648,7 +671,10 @@ class ScaNN(TopK):
           distance_measure=distance_measure)
 
       builder = builder.tree(
-          num_leaves=num_leaves, num_leaves_to_search=num_leaves_to_search)
+          num_leaves=num_leaves,
+          num_leaves_to_search=num_leaves_to_search,
+          training_iterations=self._training_iterations,
+      )
       builder = builder.score_ah(dimensions_per_block=dimensions_per_block)
 
       if self._num_reordering_candidates is not None:
@@ -734,3 +760,6 @@ class ScaNN(TopK):
       return distances, indices
 
     return distances, tf.gather(self._identifiers, indices)
+
+  def is_exact(self) -> bool:
+    return False

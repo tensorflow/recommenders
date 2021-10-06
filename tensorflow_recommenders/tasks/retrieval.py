@@ -45,6 +45,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
                batch_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
                temperature: Optional[float] = None,
                num_hard_negatives: Optional[int] = None,
+               remove_accidental_hits: bool = False,
                name: Optional[Text] = None) -> None:
     """Initializes the task.
 
@@ -66,6 +67,10 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
         examples with largest logits are kept when computing cross-entropy loss.
         If larger than batch size or non-positive, all the negative examples are
         kept.
+      remove_accidental_hits: When given
+        enables removing accidental hits of examples used as negatives. An
+        accidental hit is defined as a candidate that is used as an in-batch
+        negative but has the same id with the positive candidate.
       name: Optional task name.
     """
 
@@ -78,6 +83,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     self._batch_metrics = batch_metrics
     self._temperature = temperature
     self._num_hard_negatives = num_hard_negatives
+    self._remove_accidental_hits = remove_accidental_hits
 
   @property
   def factorized_metrics(self) -> Optional[tfrs_metrics.FactorizedTopK]:
@@ -118,10 +124,8 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       candidate_sampling_probability: Optional tensor of candidate sampling
         probabilities. When given will be be used to correct the logits to
         reflect the sampling probability of negative candidates.
-      candidate_ids: Optional tensor containing candidate ids. When given
-        enables removing accidental hits of examples used as negatives. An
-        accidental hit is defined as an candidate that is used as an in-batch
-        negative but has the same id with the positive candidate.
+      candidate_ids: Optional tensor containing candidate ids. When given,
+        factorized top-K evaluation will be id-based rather than score-based.
       compute_metrics: Whether to compute metrics. Set this to False
         during training for faster training.
 
@@ -141,8 +145,11 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     if compute_metrics:
       if self._factorized_metrics:
         metric_update_ops.append(
-            self._factorized_metrics.update_state(query_embeddings,
-                                                  candidate_embeddings))
+            self._factorized_metrics.update_state(
+                query_embeddings,
+                candidate_embeddings,
+                true_candidate_ids=candidate_ids)
+        )
       if self._batch_metrics:
         metric_update_ops.extend([
             batch_metric.update_state(labels, scores)
@@ -156,7 +163,12 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       scores = layers.loss.SamplingProbablityCorrection()(
           scores, candidate_sampling_probability)
 
-    if candidate_ids is not None:
+    if self._remove_accidental_hits:
+      if candidate_ids is None:
+        raise ValueError(
+            "When accidental hit removal is enabled, candidate ids "
+            "must be supplied."
+        )
       scores = layers.loss.RemoveAccidentalHits()(labels, scores, candidate_ids)
 
     if self._num_hard_negatives is not None:

@@ -72,11 +72,9 @@ class ModelTest(tf.test.TestCase):
         self.task = tasks.Retrieval(
             metrics=metrics.FactorizedTopK(
                 candidates=candidate_dataset.map(self.candidate_model),
-                k=5,
-                metrics=[
-                    tf.keras.metrics.TopKCategoricalAccuracy(
-                        k=5, name="factorized_categorical_accuracy_at_5")
-                ]))
+                ks=[5],
+            )
+        )
 
       def compute_loss(self, inputs, training=False):
         query_features, candidate_features = inputs
@@ -101,7 +99,7 @@ class ModelTest(tf.test.TestCase):
     metrics_ = model.evaluate(data.batch(2), return_dict=True)
 
     self.assertIn("loss", metrics_)
-    self.assertIn("factorized_categorical_accuracy_at_5", metrics_)
+    self.assertIn("factorized_top_k/top_5_categorical_accuracy", metrics_)
 
   def test_multiask_model(self):
     """Test a joint ranking-retrieval model."""
@@ -118,11 +116,9 @@ class ModelTest(tf.test.TestCase):
         self.retrieval_task = tasks.Retrieval(
             metrics=metrics.FactorizedTopK(
                 candidates=candidate_dataset.map(self.candidate_model),
-                k=5,
-                metrics=[
-                    tf.keras.metrics.TopKCategoricalAccuracy(
-                        k=5, name="factorized_categorical_accuracy_at_5")
-                ]))
+                ks=[5]
+            )
+        )
         self.ctr_task = tasks.Ranking(
             metrics=[tf.keras.metrics.AUC(name="ctr_auc")])
 
@@ -156,7 +152,7 @@ class ModelTest(tf.test.TestCase):
     metrics_ = model.evaluate(data.batch(2), return_dict=True)
 
     self.assertIn("loss", metrics_)
-    self.assertIn("factorized_categorical_accuracy_at_5", metrics_)
+    self.assertIn("factorized_top_k/top_5_categorical_accuracy", metrics_)
     self.assertIn("ctr_auc", metrics_)
 
   def test_regularization_losses(self):

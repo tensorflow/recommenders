@@ -522,6 +522,7 @@ class BruteForce(TopK):
     super().__init__(k=k, name=name)
 
     self.query_model = query_model
+    self._candidates = None
 
   def index(
       self,

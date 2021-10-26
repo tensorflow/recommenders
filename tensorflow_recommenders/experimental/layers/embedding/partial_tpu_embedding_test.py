@@ -16,7 +16,6 @@
 
 import math
 from typing import Dict, List
-from absl.testing import parameterized
 
 import tensorflow as tf
 
@@ -54,7 +53,7 @@ def _get_tpu_embedding_feature_config(
   return feature_config
 
 
-class PartialTPUEmbeddingTest(parameterized.TestCase, tf.test.TestCase):
+class PartialTPUEmbeddingTest(tf.test.TestCase):
 
   def test_embedding_layer(self):
     feature_config = _get_tpu_embedding_feature_config(

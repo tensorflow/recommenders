@@ -55,7 +55,7 @@ class PartialTPUEmbedding(tf.keras.layers.Layer):
         will be one step old with potential correctness drawbacks). Set to True
         for improved performance.
       batch_size: If set, this will be used as the global batch size and
-        overrides the autodetection of the batch size from the layer's input.
+        override the autodetection of the batch size from the layer's input.
         This is necesarry if all inputs to the layer's call are SparseTensors.
       size_threshold: A threshold for table sizes below which a Keras embedding
         layer is used, and above which a TPU embedding layer is used.
@@ -91,7 +91,7 @@ class PartialTPUEmbedding(tf.keras.layers.Layer):
 
     It expects a string-to-tensor (or SparseTensor/RaggedTensor) dict as input,
     and outputs a dictionary of string-to-tensor of feature_name, embedded_value
-    pairs. Not that SparseTensor/RaggedTensor are only supported for
+    pairs. Note that SparseTensor/RaggedTensor are only supported for
     TPUEmbedding and are not supported for Keras embeddings.
 
     Args:
@@ -99,10 +99,10 @@ class PartialTPUEmbedding(tf.keras.layers.Layer):
 
     Returns:
       output: A dictionary of string-to-tensor of feature_name, embedded_value
-    pairs.
+        pairs.
 
     Raises:
-      ValueError if non tf.Tensor is passed to a Keras embedding layer.
+      ValueError if no tf.Tensor is passed to a Keras embedding layer.
     """
     keras_emb_inputs = {
         key: val for key, val in inputs.items()

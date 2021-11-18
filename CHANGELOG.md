@@ -22,6 +22,10 @@ and less prone to user error.
 -   The `tfrs.metrics.FactorizedTopK` metric can now compute candidate-id based
     metrics when given the `true_candidate_ids` argument in its `call` method.
 
+### Added
+
+-   The `Retrieval` task now also accepts a `loss_metrics` argument.
+
 ## [0.6.0][2021-08-23]
 
 ### Changed

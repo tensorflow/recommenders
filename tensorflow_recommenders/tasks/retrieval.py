@@ -107,7 +107,8 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
            sample_weight: Optional[tf.Tensor] = None,
            candidate_sampling_probability: Optional[tf.Tensor] = None,
            candidate_ids: Optional[tf.Tensor] = None,
-           compute_metrics: bool = True) -> tf.Tensor:
+           compute_metrics: bool = True,
+           compute_batch_metrics: bool = True) -> tf.Tensor:
     """Computes the task loss and metrics.
 
     The main argument are pairs of query and candidate embeddings: the first row
@@ -131,7 +132,8 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
         factorized top-K evaluation will be id-based rather than score-based.
       compute_metrics: Whether to compute metrics. Set this to False
         during training for faster training.
-
+      compute_batch_metrics: Whether to compute batch level metrics which
+        includes both batch_metrics and loss_metrics.
     Returns:
       loss: Tensor of loss values.
     """
@@ -166,25 +168,25 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)
 
-    if not compute_metrics:
+    if not compute_metrics and not compute_batch_metrics:
       return loss
 
     update_ops = []
 
-    if self._factorized_metrics is not None:
+    if self._factorized_metrics is not None and compute_metrics:
       update_ops.append(
           self._factorized_metrics.update_state(
               query_embeddings,
               candidate_embeddings,
               true_candidate_ids=candidate_ids)
       )
+    if compute_batch_metrics:
+      for metric in self._batch_metrics:
+        update_ops.append(metric.update_state(labels, scores))
 
-    for metric in self._batch_metrics:
-      update_ops.append(metric.update_state(labels, scores))
-
-    for metric in self._loss_metrics:
-      update_ops.append(
-          metric.update_state(loss, sample_weight=sample_weight))
+      for metric in self._loss_metrics:
+        update_ops.append(
+            metric.update_state(loss, sample_weight=sample_weight))
 
     with tf.control_dependencies(update_ops):
       return tf.identity(loss)

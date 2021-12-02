@@ -10,6 +10,8 @@ toc:
     path: /recommenders/examples/basic_ranking
   - title: "Retrieval with distribution strategy"
     path: /recommenders/examples/diststrat_retrieval
+  - title: "Retrieval with sequential model"
+    path: /recommenders/examples/sequential_retrieval
 - title: "Using rich features"
   style: accordion
   section:

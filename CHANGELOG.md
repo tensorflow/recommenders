@@ -5,6 +5,12 @@
 A number of changes to make factorized top-K metric computation more accurate
 and less prone to user error.
 
+### Changed
+
+-   `tfrs.tasks.Ranking.call` now accepts a `compute_batch_metrics` argument to
+    allow switching off batch metric computation. Following this change,
+    'compute_metrics'argument does not impact computation of batch metrics.
+
 ### Breaking changes
 
 -   `tfrs.metrics.FactorizedTopK` requires the candidate ids for positive

@@ -48,11 +48,11 @@ class RetrievalTest(tf.test.TestCase):
     # All_pair_scores: [[6, 3], [9, 5]].
     # Normalized logits: [[3, 0], [4, 0]].
     expected_loss = -np.log(_sigmoid(3.0)) - np.log(1 - _sigmoid(4.0))
+
     expected_metrics = {
         "factorized_top_k/top_5_categorical_accuracy": 1.0,
         "batch_categorical_accuracy_at_1": 0.5,
     }
-
     loss = task(query_embeddings=query, candidate_embeddings=candidate)
     metrics_ = {
         metric.name: metric.result().numpy() for metric in task.metrics
@@ -61,6 +61,43 @@ class RetrievalTest(tf.test.TestCase):
     self.assertIsNotNone(loss)
     self.assertAllClose(expected_loss, loss)
     self.assertAllClose(expected_metrics, metrics_)
+
+    # Test computation of batch metrics when skipping corpus metrics
+    for metric in task.metrics:
+      metric.reset_states()
+    loss = task(query_embeddings=query,
+                candidate_embeddings=candidate,
+                compute_metrics=False)
+    expected_metrics1 = {
+        "factorized_top_k/top_5_categorical_accuracy": 0.0,
+        "batch_categorical_accuracy_at_1": 0.5
+    }
+    metrics1_ = {
+        metric.name: metric.result().numpy() for metric in task.metrics
+    }
+
+    self.assertIsNotNone(loss)
+    self.assertAllClose(expected_loss, loss)
+    self.assertAllClose(expected_metrics1, metrics1_)
+
+    # Test computation of corpus metrics when skipping batch metrics
+    for metric in task.metrics:
+      metric.reset_states()
+    loss = task(
+        query_embeddings=query,
+        candidate_embeddings=candidate,
+        compute_batch_metrics=False)
+    expected_metrics2 = {
+        "factorized_top_k/top_5_categorical_accuracy": 1.0,
+        "batch_categorical_accuracy_at_1": 0.0
+    }
+    metrics2_ = {
+        metric.name: metric.result().numpy() for metric in task.metrics
+    }
+
+    self.assertIsNotNone(loss)
+    self.assertAllClose(expected_loss, loss)
+    self.assertAllClose(expected_metrics2, metrics2_)
 
   def test_task_graph(self):
 

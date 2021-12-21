@@ -799,26 +799,34 @@ class TPUEmbedding(tf.keras.layers.Layer):
     tables = self._tpu_embedding.embedding_tables
     # Use the table config map to map from the cloned configs back to the
     # configs that where passed into the layer on init.
-    return {old_config: tables[new_config]
-            for old_config, new_config in self._table_config_map}
+    return {
+        old_config: tables[new_config]
+        for old_config, new_config in self._table_config_map
+    }
 
-  @property
-  def _checkpoint_dependencies(self):
+  def _trackable_children(self, save_type="checkpoint", **kwargs):
     """All dependencies of this object.
 
     We use a dummy tensor to work around Keras pruning the backwards pass.
     We strip it here to ensure we don't save this tensor in the checkpoint.
 
+    Args:
+      save_type: A string, can be 'savedmodel' or 'checkpoint'. Defaults to
+        'checkpoint'.
+      **kwargs: Keyword arguments passed to the object when saving SavedModel or
+        Checkpoints. Possible kwargs include (more may be added later):
+        * cache: An object identity dictionary (a dictionary that uses "is" to
+          match keys, so that unhashable object may be used as keys). An empty
+          cache is created at the start of every SavedModel export, and shared
+          between all `Trackable` subclasses in the same object graph. This
+          object is used for advanced saving functionality.
+
     Returns:
-      A list of `TrackableReference` objects indicating named
-      `Trackable` dependencies which should be saved along with this
-      object.
+      Dictionary mapping names to child trackables.
     """
-    return [
-        dep
-        for dep in super()._checkpoint_dependencies
-        if dep.name != _DUMMY_NAME
-    ]
+    dep = super()._trackable_children(save_type, **kwargs)
+    dep.pop(_DUMMY_NAME, None)
+    return dep
 
 
 def _get_slot_variable_creation_fn(optimizer):

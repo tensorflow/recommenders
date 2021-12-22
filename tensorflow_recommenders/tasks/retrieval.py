@@ -177,7 +177,9 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       update_ops.append(
           self._factorized_metrics.update_state(
               query_embeddings,
-              candidate_embeddings,
+              # Slice to the size of query embeddings if `candidate_embeddings`
+              # contains extra negatives.
+              candidate_embeddings[:tf.shape(query_embeddings)[0]],
               true_candidate_ids=candidate_ids)
       )
     if compute_batch_metrics:

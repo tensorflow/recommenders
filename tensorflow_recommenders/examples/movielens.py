@@ -72,7 +72,7 @@ def evaluate(user_model: tf.keras.Model,
   precision_values = []
   recall_values = []
 
-  for (user_id, test_movies) in test_user_to_movies.items():
+  for user_id, test_movies in test_user_to_movies.items():
     user_embedding = user_model({"user_id": np.array([user_id])}).numpy()
     scores = (user_embedding @ movie_embeddings.T).flatten()
 
@@ -167,10 +167,9 @@ def sample_listwise(
   for example in rating_dataset:
     user_id = example["user_id"].numpy()
     example_lists_by_user[user_id]["movie_title"].append(
-        example["movie_title"],)
+        example["movie_title"])
     example_lists_by_user[user_id]["user_rating"].append(
-        example["user_rating"],
-    )
+        example["user_rating"])
     movie_title_vocab.add(example["movie_title"].numpy())
 
   tensor_slices = {"user_id": [], "movie_title": [], "user_rating": []}

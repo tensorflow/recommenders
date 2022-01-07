@@ -50,7 +50,7 @@ class Ranking(models.Model):
     a rating prediction model.
 
   Changing these should cover a broad range of models, but this class is not
-  intended to cover all possible use cases.  For full flexibility inherit
+  intended to cover all possible use cases.  For full flexibility, inherit
   from `tfrs.models.Model` and provide your own implementations of
   the `compute_loss` and `call` methods.
   """
@@ -174,7 +174,7 @@ class Ranking(models.Model):
       features, labels, sample_weight = inputs
     else:
       raise ValueError(
-          "Inputs should either be a tuple of (features, labels), "
+          "Inputs should be either a tuple of (features, labels), "
           "or a tuple of (features, labels, sample weights). "
           "Got a length {len(inputs)} tuple instead: {inputs}."
       )
@@ -200,7 +200,7 @@ class Ranking(models.Model):
     sparse_features = inputs["sparse_features"]
 
     sparse_embeddings = self._embedding_layer(sparse_features)
-    # Combine a dictionary to a vector and squeeze dimension from
+    # Combine a dictionary into a vector and squeeze dimension from
     # (batch_size, 1, emb) to (batch_size, emb).
     sparse_embeddings = tf.nest.flatten(sparse_embeddings)
 
@@ -226,7 +226,7 @@ class Ranking(models.Model):
     preferable to use separate optimizers/learning rates for embedding
     variables and dense variables.
     `tfrs.experimental.optimizers.CompositeOptimizer` can be used to apply
-    different optimizer to embedding variables and the remaining variables.
+    different optimizers to embedding variables and the remaining variables.
     """
     return self._embedding_layer.trainable_variables
 

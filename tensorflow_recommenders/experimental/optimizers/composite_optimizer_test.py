@@ -110,7 +110,7 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
       composite_optimizer.apply_gradients(grads_and_vars)
 
   def test_checkpoint_save_restore_export(self):
-    # Use a simple Linear model to test checkpoint save/restore/export.
+    # Use a simple LinearModel to test checkpoint save/restore/export.
     def get_model() -> tf.keras.Model:
       model = tf.keras.experimental.LinearModel(units=10)
 

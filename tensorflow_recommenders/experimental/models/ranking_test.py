@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # pylint: disable=g-long-lambda
-"""Tests for tensorflow_recommenders.experimental.models.ranking_model."""
+"""Tests for Ranking."""
 
 import itertools
 import math
@@ -66,6 +66,8 @@ def _generate_synthetic_data(num_dense: int,
                              generate_weights: bool = False) -> tf.data.Dataset:
   dense_tensor = tf.random.uniform(
       shape=(dataset_size, num_dense), maxval=1.0, dtype=tf.float32)
+  # The mean is in [0, 1] interval.
+  dense_tensor_mean = tf.math.reduce_mean(dense_tensor, axis=1)
 
   sparse_tensors = []
   for size in vocab_sizes:
@@ -76,9 +78,6 @@ def _generate_synthetic_data(num_dense: int,
   sparse_tensor_elements = {
       str(i): sparse_tensors[i] for i in range(len(sparse_tensors))
   }
-
-  # The mean is in [0, 1] interval.
-  dense_tensor_mean = tf.math.reduce_mean(dense_tensor, axis=1)
 
   sparse_tensors = tf.stack(sparse_tensors, axis=-1)
   sparse_tensors_mean = tf.math.reduce_sum(sparse_tensors, axis=1)

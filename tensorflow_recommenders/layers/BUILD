@@ -53,6 +53,19 @@ py_library(
     ],
 )
 
+py_library(
+    name = "factorized_top_k_test_library",
+    testonly = True,
+    srcs = ["factorized_top_k_test.py"],
+    srcs_version = "PY3",
+    deps = [
+        ":factorized_top_k",
+        # py/absl/testing:parameterized dep,
+        # py/numpy dep,
+        # py/tensorflow dep,
+    ],
+)
+
 # Tests
 py_test(
     name = "factorized_top_k_test",

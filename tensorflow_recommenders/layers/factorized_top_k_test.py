@@ -1,4 +1,4 @@
-# Copyright 2021 The TensorFlow Recommenders Authors.
+# Copyright 2022 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -134,7 +134,7 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
 
     self.assertAllEqual(top_scores.shape, expected_top_scores.shape)
     self.assertAllEqual(top_indices.shape, expected_top_indices.shape)
-    self.assertAllClose(top_scores, expected_top_scores)
+    self.assertAllClose(top_scores, expected_top_scores, atol=1e-4)
 
     self.assertAllEqual(top_indices.numpy().astype(indices_dtype),
                         expected_top_indices)
@@ -157,14 +157,23 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     self.assertAllEqual(restored_top_indices.numpy().astype(indices_dtype),
                         expected_top_indices)
 
+
+class StreamingTest(FactorizedTopKTestBase):
+
   @parameterized.parameters(test_cases())
   def test_streaming(self, *args, **kwargs):
     self.run_top_k_test(
         factorized_top_k.Streaming, *args, check_export=False, **kwargs)
 
+
+class BruteForceTest(FactorizedTopKTestBase):
+
   @parameterized.parameters(test_cases())
   def test_brute_force(self, *args, **kwargs):
     self.run_top_k_test(factorized_top_k.BruteForce, *args, **kwargs)
+
+
+class ScannTest(FactorizedTopKTestBase):
 
   @parameterized.parameters(np.str, np.float32, np.float64, np.int32, np.int64)
   def test_scann(self, identifier_dtype):

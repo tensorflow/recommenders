@@ -54,8 +54,7 @@ def _gather_elements_along_row(data: tf.Tensor,
     flat_data = tf.reshape(data, [-1])
     flat_indices = tf.reshape(
         row_indices * num_column + column_indices, [-1])
-    return tf.reshape(
-        tf.gather(flat_data, flat_indices), [num_row, num_gathered])
+    return tf.reshape(tf.gather(flat_data, flat_indices),            [num_row, num_gathered])
 
 
 class HardNegativeMining(tf.keras.layers.Layer):

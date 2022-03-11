@@ -98,12 +98,13 @@ class LossTest(tf.test.TestCase, parameterized.TestCase):
                                                                    col_idx])
 
 
-class SamplingProbabilityCorrectionTest(tf.test.TestCase, parameterized.TestCase):
+class SamplingProbabilityCorrectionTest(
+    tf.test.TestCase, parameterized.TestCase):
   """Loss layers tests."""
 
   @parameterized.parameters(42, 123, 8391, 12390, 1230)
   def test_sampling_probability_correction(self, random_seed):
-    """Test hard negative mining."""
+    """Test sampling probability correction."""
 
     shape = (10, 10)
     rng = np.random.RandomState(random_seed)
@@ -119,7 +120,8 @@ class SamplingProbabilityCorrectionTest(tf.test.TestCase, parameterized.TestCase
     # set some of the probabilities to 0
     probs_with_zeros = probs * rng.choice([0., 1.], size=probs.shape)
 
-    corrected_logits_with_zeros = loss.SamplingProbablityCorrection()(logits, probs_with_zeros)
+    corrected_logits_with_zeros = loss.SamplingProbablityCorrection()(
+        logits, probs_with_zeros)
     corrected_logits_with_zeros = corrected_logits_with_zeros.numpy()
 
     np.testing.assert_array_less(logits, corrected_logits_with_zeros)

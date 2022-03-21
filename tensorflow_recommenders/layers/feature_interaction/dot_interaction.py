@@ -26,7 +26,7 @@ class DotInteraction(tf.keras.layers.Layer):
   section 2.1.3. Sparse activations and dense activations are combined.
   Dot interaction is applied to a batch of input Tensors [e1,...,e_k] of the
   same dimension and the output is a batch of Tensors with all distinct pairwise
-  dot products of the form dot(e_i, e_j) for i <= j if self self_interaction is
+  dot products of the form dot(e_i, e_j) for i <= j if self_interaction is
   True, otherwise dot(e_i, e_j) i < j.
 
   Attributes:

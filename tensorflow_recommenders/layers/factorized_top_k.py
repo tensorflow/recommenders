@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Lint as: python3
 # pylint: disable=g-import-not-at-top
 """Layers for retrieving top K recommendations from factorized retrieval models."""
 

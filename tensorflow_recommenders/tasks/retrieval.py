@@ -150,7 +150,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       scores = scores / self._temperature
 
     if candidate_sampling_probability is not None:
-      scores = layers.loss.SamplingProbablityCorrection()(
+      scores = layers.loss.SamplingProbabilityCorrection()(
           scores, candidate_sampling_probability)
 
     if self._remove_accidental_hits:

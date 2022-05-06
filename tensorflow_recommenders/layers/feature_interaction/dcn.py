@@ -115,7 +115,7 @@ class Cross(tf.keras.layers.Layer):
     if self._projection_dim is None:
       self._dense = tf.keras.layers.Dense(
           last_dim,
-          kernel_initializer=self._kernel_initializer,
+          kernel_initializer=_clone_initializer(self._kernel_initializer),
           bias_initializer=self._bias_initializer,
           kernel_regularizer=self._kernel_regularizer,
           bias_regularizer=self._bias_regularizer,
@@ -124,13 +124,13 @@ class Cross(tf.keras.layers.Layer):
     else:
       self._dense_u = tf.keras.layers.Dense(
           self._projection_dim,
-          kernel_initializer=self._kernel_initializer,
+          kernel_initializer=_clone_initializer(self._kernel_initializer),
           kernel_regularizer=self._kernel_regularizer,
           use_bias=False,
       )
       self._dense_v = tf.keras.layers.Dense(
           last_dim,
-          kernel_initializer=self._kernel_initializer,
+          kernel_initializer=_clone_initializer(self._kernel_initializer),
           bias_initializer=self._bias_initializer,
           kernel_regularizer=self._kernel_regularizer,
           bias_regularizer=self._bias_regularizer,
@@ -192,3 +192,7 @@ class Cross(tf.keras.layers.Layer):
     }
     base_config = super(Cross, self).get_config()
     return dict(list(base_config.items()) + list(config.items()))
+
+
+def _clone_initializer(initializer):
+  return initializer.__class__.from_config(initializer.get_config())

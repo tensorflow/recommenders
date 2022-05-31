@@ -3,7 +3,6 @@
 set -e   # fail and exit on any command erroring
 
 TF_VERSION="2.6.0"
-PY_VERSION="3.6"
 
 GIT_COMMIT_ID=${1:-""}
 [[ -z $GIT_COMMIT_ID ]] && echo "Must provide a commit." && exit 1
@@ -17,10 +16,9 @@ fi
 # Import build functions.
 source ./tools/build_scripts/utils.sh
 
-# Set up a virtualenv.
-echo "Creating virtualenv..."
-create_virtualenv "tfrs_$TF_VERSION_$PY_VERSION" "python$PY_VERSION"
-install_tf "$TF_VERSION"
+# Set up Python.
+echo "Setting up Python..."
+setup_python "$PY_VERSION"
 
 # Install PyPI-related packages.
 pip install -q --upgrade setuptools pip

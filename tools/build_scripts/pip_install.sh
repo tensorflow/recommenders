@@ -10,9 +10,9 @@ set -e   # fail and exit on any command erroring
 # Import build functions.
 source ./tools/build_scripts/utils.sh
 
-# Set up a virtualenv.
-echo "Creating virtualenv..."
-create_virtualenv "tfrs_$TF_VERSION_$PY_VERSION" "python$PY_VERSION"
+# Set up Python.
+echo "Setting up Python..."
+setup_python "$PY_VERSION"
 
 # Install TensorFlow.
 echo "Installing TensorFlow..."

@@ -2,7 +2,7 @@
 
 set -e   # fail and exit on any command erroring
 
-TF_VERSION="2.6.0"
+TF_VERSION="2.9.0"
 
 GIT_COMMIT_ID=${1:-""}
 [[ -z $GIT_COMMIT_ID ]] && echo "Must provide a commit." && exit 1

@@ -35,12 +35,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=pathlib.Path("requirements.txt").read_text().splitlines(),
     extras_require={
-        "docs": [
-            "fire",
-            "annoy",
-            "scann == 1.2.*",
-            "tensorflow-ranking"
-        ],
+        "docs": ["fire", "annoy", "scann == 1.2.*", "tensorflow-ranking"],
     },
     # PyPI package information.
     classifiers=[
@@ -50,9 +45,9 @@ setuptools.setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Topic :: Scientific/Engineering",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",

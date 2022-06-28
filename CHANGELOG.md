@@ -7,6 +7,8 @@ and less prone to user error.
 
 ### Changed
 
+-   Pinned TensorFlow to >= 2.9.0 which works with Scann 1.2.7.
+
 -   `tfrs.tasks.Ranking.call` now accepts a `compute_batch_metrics` argument to
     allow switching off batch metric computation. Following this change,
     'compute_metrics'argument does not impact computation of batch metrics.

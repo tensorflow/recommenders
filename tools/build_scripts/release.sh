@@ -16,9 +16,8 @@ fi
 # Import build functions.
 source ./tools/build_scripts/utils.sh
 
-# Set up Python.
-echo "Setting up Python..."
-setup_python "$PY_VERSION"
+which python3
+python3 --version
 
 # Install PyPI-related packages.
 pip install -q --upgrade setuptools pip

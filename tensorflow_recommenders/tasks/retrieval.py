@@ -132,8 +132,8 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
         factorized top-K evaluation will be id-based rather than score-based.
       compute_metrics: Whether to compute metrics. Set this to False
         during training for faster training.
-      compute_batch_metrics: Whether to compute batch level metrics which
-        includes both batch_metrics and loss_metrics.
+      compute_batch_metrics: Whether to compute batch level metrics.
+        In-batch loss_metrics will still be computed.
     Returns:
       loss: Tensor of loss values.
     """
@@ -168,10 +168,10 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)
 
-    if not compute_metrics and not compute_batch_metrics:
-      return loss
-
     update_ops = []
+    for metric in self._loss_metrics:
+      update_ops.append(
+          metric.update_state(loss, sample_weight=sample_weight))
 
     if self._factorized_metrics is not None and compute_metrics:
       update_ops.append(
@@ -185,10 +185,6 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     if compute_batch_metrics:
       for metric in self._batch_metrics:
         update_ops.append(metric.update_state(labels, scores))
-
-      for metric in self._loss_metrics:
-        update_ops.append(
-            metric.update_state(loss, sample_weight=sample_weight))
 
     with tf.control_dependencies(update_ops):
       return tf.identity(loss)

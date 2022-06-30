@@ -7,6 +7,12 @@ and less prone to user error.
 
 ### Changed
 
+-   `tfrs.layers.embedding.TPUEmbedding` now supports input features with
+    dynamic shape. `batch_size` argument is deprecated and no longer required.
+
+-   `tfrs.layers.embedding.TPUEmbedding` now supports running on different
+    versions of TPU.
+
 -   Pinned TensorFlow to >= 2.9.0 which works with Scann 1.2.7.
 
 -   `tfrs.tasks.Ranking.call` now accepts a `compute_batch_metrics` argument to

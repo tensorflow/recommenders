@@ -14,93 +14,61 @@
 
 """Keras interface for TPU Embeddings in TF2."""
 
-import tensorflow as tf
+from typing import Iterable, Optional, Union, Any, Dict
 
+import tensorflow.compat.v2 as tf
 
 _SLOT_NAME_MAPPING = {
     # Slot names in Keras optimizer v2 are different compared to the slot names
     # in our API.
-    tf.keras.optimizers.Adagrad: {"accumulators": "accumulator"},
-    tf.keras.optimizers.Adam: {"momenta": "m", "velocities": "v"}
+    tf.keras.optimizers.Adagrad: {
+        "accumulators": "accumulator"
+    },
+    tf.keras.optimizers.Adam: {
+        "momenta": "m",
+        "velocities": "v"
+    },
+    tf.keras.optimizers.Ftrl: {
+        "accumulators": "accumulator",
+        "linears": "linear"
+    },
 }
 _OPTIMIZER_PARAMETERS = {
     # A tuple: first element is the embedding optimizer class. Second is the
     # list of supported hyper parameters and the second list is the unsupported
     # hyperparameters.
     tf.keras.optimizers.Adam: (tf.tpu.experimental.embedding.Adam,
-                               ["learning_rate", "beta_1", "beta_2", "epsilon"],
-                               ["decay", "amsgrad"]),
-    tf.keras.optimizers.Adagrad: (
-        tf.tpu.experimental.embedding.Adagrad,
-        ["learning_rate", "initial_accumulator_value"],
-        ["epsilon"]),
-    tf.keras.optimizers.SGD: (tf.tpu.experimental.embedding.SGD,
-                              ["learning_rate"],
-                              ["decay", "momentum", "nesterov"])
+                               ["learning_rate", "beta_1", "beta_2",
+                                "epsilon"], ["decay", "amsgrad"]),
+    tf.keras.optimizers.Adagrad:
+        (tf.tpu.experimental.embedding.Adagrad,
+         ["learning_rate", "initial_accumulator_value"], ["epsilon"]),
+    tf.keras.optimizers.Ftrl: (tf.tpu.experimental.embedding.FTRL, [
+        "learning_rate", "learning_rate_power", "l1_regularization_strength",
+        "l2_regularization_strength", "beta", "initial_accumulator_value"
+    ], ["l2_shrinkage_regularization_strength"]),
+    tf.keras.optimizers.SGD:
+        (tf.tpu.experimental.embedding.SGD, ["learning_rate"],
+         ["decay", "momentum", "nesterov"])
 }
 _DUMMY_NAME = "tpu_embedding_helper_dummy"
 
-
-def _get_batch_size_from_input_shapes(input_shape):
-  """From a list of input shapes, gets the per core size.
-
-  We want to extract the first dimension for each TensorShape in input_shape and
-  ensure that:
-  1. They are all the same or None.
-  2. They are not all None.
-
-  If SparseTensors are fed directly into call (which in turn calls build),
-  during tracing, the shape of the SparseTensor will itself be a tensor which
-  results in unknown dimensions for the SparseTensor.
-
-  Args:
-    input_shape: A nested structure of `TensorShape`s.
-
-  Returns:
-    The per core batch size.
-  """
-  flattened_input_shape = tf.nest.flatten(input_shape)
-  if not flattened_input_shape:
-    raise ValueError("No input passed to TPUEmbedding layer.")
-
-  per_core_batch_size = None
-
-  for tensor_shape in flattened_input_shape:
-    if tensor_shape.rank < 1:
-      raise ValueError(
-          "Received input tensor of shape {}. Rank must be > 0.".format(
-              tensor_shape))
-    shape = tensor_shape.as_list()
-    if shape[0] is not None:
-      if per_core_batch_size is None:
-        per_core_batch_size = shape[0]
-      elif per_core_batch_size != shape[0]:
-        raise ValueError("Found multiple batch sizes {} and {} in input. All "
-                         "features must have the same batch size.".format(
-                             per_core_batch_size, shape[0]))
-
-  if per_core_batch_size is None:
-    raise ValueError("Unable to determine batch dimension of any features. "
-                     "This may happen if all inputs are SparseTensors. If you "
-                     "are using tf.keras.Input, you must specify a batch size."
-                     "If you are using the layer in a subclass model and "
-                     "calling the layer directly/using build(), you must "
-                     "specify a batch size when constructing the layer.")
-
-  return per_core_batch_size
+_EMBEDDING_V2 = tf.tpu.experimental.HardwareFeature.EmbeddingFeature.V2
+_EMBEDDING_V1 = tf.tpu.experimental.HardwareFeature.EmbeddingFeature.V1
+_EMBEDDING_UNSUPPORTED = tf.tpu.experimental.HardwareFeature.EmbeddingFeature.UNSUPPORTED
 
 
 def _normalize_and_prepare_optimizer(optimizer):
   """Normalizes an optimizer into a mid level API optimizer class.
 
   In the case of a mid level API optimizer, this just passes it through.
-  Passing optimizer names, "sgd", "adam", "adagrad" are supported and
-  instantiate the mid level API object with default parameters. If a Keras
+  Passing optimizer names, "sgd", "adam", "adagrad", and "ftrl" are supported
+  and instantiate the mid level API object with default parameters. If a Keras
   optimizer is passed it will be converted to a mid level optimizer.
 
   Args:
     optimizer: A keras optimizer, string optimizer name or subclass of
-  _OptimizationParameters.
+      _OptimizationParameters.
 
   Returns:
     A subclass of tpu_embedding_v2._Optimizer or None.
@@ -108,9 +76,10 @@ def _normalize_and_prepare_optimizer(optimizer):
 
   if optimizer is None:
     return None
-  elif isinstance(optimizer, (tf.tpu.experimental.embedding.SGD,
-                              tf.tpu.experimental.embedding.Adagrad,
-                              tf.tpu.experimental.embedding.Adam)):
+  elif isinstance(
+      optimizer,
+      (tf.tpu.experimental.embedding.SGD, tf.tpu.experimental.embedding.Adagrad,
+       tf.tpu.experimental.embedding.Adam, tf.tpu.experimental.embedding.FTRL)):
     return optimizer
   elif isinstance(optimizer, str):
     if str(optimizer) == "sgd":
@@ -119,9 +88,11 @@ def _normalize_and_prepare_optimizer(optimizer):
       return tf.tpu.experimental.embedding.Adagrad()
     elif str(optimizer) == "adam":
       return tf.tpu.experimental.embedding.Adam()
+    elif str(optimizer) == "ftrl":
+      return tf.tpu.experimental.embedding.FTRL()
     else:
       raise ValueError("Unknown optimizer name '{}'. Please use one of 'sgd',"
-                       "'adagrad' or 'adam'".format(optimizer))
+                       "'adagrad', 'adam', or 'ftrl'".format(optimizer))
   elif isinstance(optimizer, tf.keras.optimizers.Optimizer):
     return translate_keras_optimizer(optimizer)
   else:
@@ -170,6 +141,7 @@ def _clone_and_prepare_features(feature_config):
         tf.tpu.experimental.embedding.FeatureConfig(
             table=table_configs[config.table],
             max_sequence_length=config.max_sequence_length,
+            output_shape=config.output_shape,
             validate_weights_and_indices=config.validate_weights_and_indices,
             name=config.name))
 
@@ -283,7 +255,7 @@ class TPUEmbedding(tf.keras.layers.Layer):
   module to your Keras optmizer in order to convert it into a
   `tf.tpu.experimental.embedding` optimizer. In this case, the Keras optimizer
   class instance you specify will be used to manage the slot variables. This
-  allows you to instantiate the model under a non-TPU strategy and still by able
+  allows you to instantiate the model under a non-TPU strategy and still be able
   to train it. See below for a code example. Thus it is important to include the
   Keras optimizer instance in your checkpoint. If you use case 1 or create your
   own instance of an optimizer class from `tf.tpu.experimental.embedding`, the
@@ -296,7 +268,7 @@ class TPUEmbedding(tf.keras.layers.Layer):
   learning rate in your optimizer:
 
   1.  One of the objects in the `tf.keras.optimizers.schedules` name space.
-  2.  A python callable takeing no parameters which returns a scalar tensor of
+  2.  A python callable taking no parameters which returns a scalar tensor of
       type `tf.float32`.
 
   #### tf.keras.optimizers.schedules
@@ -340,20 +312,18 @@ class TPUEmbedding(tf.keras.layers.Layer):
   strategy = tf.distribute.TPUStrategy(...)
   with strategy.scope():
     embedding_inputs = {
-        'feature_one': tf.keras.Input(batch_size=1024, shape=(1,),
+        'feature_one': tf.keras.Input(batch_size=1024, shape=(),
                                       dtype=tf.int32),
-        'feature_two': tf.keras.Input(batch_size=1024, shape=(1,),
+        'feature_two': tf.keras.Input(batch_size=1024, shape=(),
                                       dtype=tf.int32, ragged=True),
-        'feature_three': tf.keras.Input(batch_size=1024, shape=(1,),
+        'feature_three': tf.keras.Input(batch_size=1024, shape=(),
                                         dtype=tf.int32)}
     # embedding, feature_config and embedding_inputs all have the same nested
     # structure.
     embedding = tpu_embedding_layer.TPUEmbedding(
         feature_config=feature_config,
         optimizer=tf.tpu.experimental.embedding.SGD(0.1))(embedding_inputs)
-    logits = tf.keras.layers.Dense(1)(
-        tf.concat(tf.nest.flatten(embedding), axis=1)
-    )
+    logits = tf.keras.layers.Dense(1)(tf.concat(tf.nest.flatten(embedding)))
     model = tf.keras.Model(embedding_inputs, logits)
   ```
 
@@ -362,16 +332,13 @@ class TPUEmbedding(tf.keras.layers.Layer):
   ```python
   class ModelWithEmbeddings(tf.keras.Model):
     def __init__(self):
-      super(ModelWithEmbeddings, self).__init__()
       self.embedding_layer = tpu_embedding_layer.TPUEmbedding(
           feature_config=feature_config,
           optimizer=tf.tpu.experimental.embedding.SGD(0.1))
-      self.dense = tf.keras.layers.Dense(1)
 
     def call(self, inputs):
       embedding = self.embedding_layer(inputs)
-      logits = self.dense(tf.concat(tf.nest.flatten(embedding), axis=1))
-      return logits
+      logits = tf.keras.layers.Dense(1)(tf.concat(tf.nest.flatten(embedding)))
 
   with strategy.scope():
     model = ModelWithEmbeddings()
@@ -395,11 +362,26 @@ class TPUEmbedding(tf.keras.layers.Layer):
   dataset_iterator = iter(distributed_dataset)
   ```
 
-  NOTE: All batches passed to the layer must have the same batch size for each
-  input, moreover once you have called the layer with one batch size all
-  subsequent calls must use the same batch_size. In the event that the batch
-  size cannot be automatically determined by the enqueue method, you must
-  specify the batch_size argument when instantiating the layer.
+  Different feature inputs can have different shapes. For dense and sparse
+  tensor, rank 2 and above is supported. For ragged tensor, although only rank 2
+  is supported, you can specify the output shape to be rank 2 and above. The
+  output shape specified in the FeatureConfig has the first priority. The input
+  shape passed in build method has second priority and the input shapes
+  auto detected from input feature has the lowest priority. The latter two will
+  be converted to output shapes by omitting the last dimension. If the lower
+  priority one has output shapes which don't match the former one. A ValueError
+  will be raised. Only when the former one has undefined output shapes, the
+  latter one can override.
+
+  NOTE: All batches passed to the layer can have different input shapes. But
+  these input shapes need to match with the output shapes set by either
+  `FeatureConfig` or build method except for ragged tensor. Only 2D
+  ragged tensor with output shape set to higher dimensions is allowed as
+  long as the total number of elements matches. All subsequent calls must have
+  the same input shapes. In the event that the input shapes cannot be
+  automatically determined by the enqueue method, you must call
+  the build method with the input shapes or provide output shapes in the
+  `FeatureConfig` to initialize the layer.
 
   ## Training and evaluation
 
@@ -521,10 +503,10 @@ class TPUEmbedding(tf.keras.layers.Layer):
   applied*.
 
   When created under a CPU strategy, the table variables are created normally
-  are part of the model's trainiable variables. In this case, if you are using
-  a different optimizer to embedding tables, you must manually partition the
-  variables and gradients so that you can use the Keras optmizer you created for
-  embedding tables on the tables.
+  and are part of the model's trainiable variables. In this case, if you are
+  using a different optimizer to embedding tables, you must manually partition
+  the variables and gradients so that you can use the Keras optmizer you created
+  for embedding tables on the tables.
 
   E.g.,
 
@@ -537,9 +519,7 @@ class TPUEmbedding(tf.keras.layers.Layer):
 
     def call(self, inputs):
       embedding = self.embedding_layer(inputs)
-      logits = tf.keras.layers.Dense(1)(
-        tf.concat(tf.nest.flatten(embedding), axis=1)
-      )
+      logits = tf.keras.layers.Dense(1)(tf.concat(tf.nest.flatten(embedding)))
 
   with strategy.scope():
     embedding_optimizer = tf.keras.optimizers.Adagrad(learning_rate=0.1)
@@ -563,7 +543,7 @@ class TPUEmbedding(tf.keras.layers.Layer):
           id(v) for v in model.embedding_layer.trainable_variables]
       dense_grads_and_vars = [
           (g, v) for g, v in grads_and_vars
-          if id(v) not in embedding_var_ids
+          if id(v) not in embedding_var_ids]
       dense_optimizer.apply_gradients(dense_grads_and_vars)
 
       embedding_grads_and_vars = [
@@ -576,11 +556,32 @@ class TPUEmbedding(tf.keras.layers.Layer):
   ```
 
   The above training step works both on TPU and on CPU.
+
+  ## Using this layer on TPU without embedding lookup accelerator.
+
+  This layer can also be initialized under TPUs without embedding lookup
+  accelerators. There is no change required to the client code as the layer can
+  auto switch between different mid level APIs based on the TPU hardware.
+  You can also force the layer to run without acceleration by overriding
+  the embedding feature to "UNSUPPORTED". This might be helpful when your
+  table is relatively small.
+
+  Note that instead of sharding the table across devices, the table will be
+  replicated across them.
   """
 
-  def __init__(self, feature_config, optimizer,
-               pipeline_execution_with_tensor_core=False,
-               batch_size=None):
+  def __init__(
+      self,
+      feature_config: Union[tf.tpu.experimental.embedding.FeatureConfig,
+                            Iterable],  # pylint:disable=g-bare-generic
+      optimizer: Optional[Union[tf.tpu.experimental.embedding.SGD,
+                                tf.tpu.experimental.embedding.Adagrad,
+                                tf.tpu.experimental.embedding.Adam,
+                                tf.tpu.experimental.embedding.FTRL]],
+      pipeline_execution_with_tensor_core: bool = False,
+      batch_size: Optional[int] = None,
+      embedding_feature: Optional[
+          tf.tpu.experimental.HardwareFeature.EmbeddingFeature] = None):
     """A Keras layer for accelerated embedding lookups on TPU.
 
     Args:
@@ -596,39 +597,99 @@ class TPUEmbedding(tf.keras.layers.Layer):
         computations will overlap with the TensorCore computations (and hence
         will be one step old with potential correctness drawbacks). Set to True
         for improved performance.
-      batch_size: If set, this will be used as the per core batch size and
-        overrides the autodetection of the batch size from the layer's input.
-        This is necesarry if all inputs to the layer's call are SparseTensors.
-        Note that this can be computed via
-        ```
-        batch_size = global_batch_size/strategy.num_replicas_in_sync
-        ```
+      batch_size: Batch size of the input feature. Deprecated, support backward
+        compatibility.
+      embedding_feature: EmbeddingFeature enum, inidicating which version of
+        TPU hardware the layer should run on.
     """
     super().__init__()
     self._feature_config, self._table_config_map = (
         _clone_and_prepare_features(feature_config))
     self._optimizer = _normalize_and_prepare_optimizer(optimizer)
-    self._batch_size = batch_size
-
-    self._tpu_embedding = tf.tpu.experimental.embedding.TPUEmbedding(
-        self._feature_config,
-        self._optimizer,
-        pipeline_execution_with_tensor_core)
-
-    self._tpu_call_id = 0
-
-  def build(self, input_shape):
-    super().build(input_shape)
 
     self._strategy = tf.distribute.get_strategy()
     self._using_tpu = _is_tpu_strategy(self._strategy)
 
-    if self._batch_size is None and self._using_tpu:
-      self._batch_size = _get_batch_size_from_input_shapes(input_shape)
-
-    self._tpu_embedding.build(self._batch_size)
-
+    self._embedding_feature = None
     if self._using_tpu:
+      self._embedding_feature = self._strategy.extended.tpu_hardware_feature.embedding_feature
+      # Override the embedding feature setting if passed.
+      if embedding_feature is not None:
+        if embedding_feature == _EMBEDDING_UNSUPPORTED:
+          self._embedding_feature = _EMBEDDING_UNSUPPORTED
+        if (embedding_feature != _EMBEDDING_UNSUPPORTED and
+            self._embedding_feature != embedding_feature):
+          raise ValueError(
+              "TPU only supports {} and {}, but got {} which is not supported."
+              .format(_EMBEDDING_UNSUPPORTED, self._embedding_feature,
+                      embedding_feature))
+
+    # Create TPU embedding mid level APIs according to the embedding feature
+    # setting.
+    self._tpu_embedding = self._create_tpu_embedding_mid_level_api(
+        self._using_tpu, self._embedding_feature,
+        pipeline_execution_with_tensor_core)
+
+    self.batch_size = batch_size
+
+    self._tpu_call_id = 0
+
+  def _create_tpu_embedding_mid_level_api(
+      self, using_tpu: bool, embedding_feature: Optional[
+          tf.tpu.experimental.HardwareFeature.EmbeddingFeature],
+      pipeline_execution_with_tensor_core: bool
+  ) -> Union[tf.tpu.experimental.embedding.TPUEmbedding,
+             tf.tpu.experimental.embedding.TPUEmbeddingV0,
+             tf.tpu.experimental.embedding.TPUEmbeddingForServing]:
+    """Creates TPU Embedding mid level API instance based on settings.
+
+    Args:
+      using_tpu: bool, Whether the layer is using tpu or not.
+      embedding_feature: EmbeddingFeature enum, indicating which version of TPU
+        TPU hardware the layer is running on.
+      pipeline_execution_with_tensor_core: Whether the TPU embedding
+        computations will overlap with the TensorCore computations (and hence
+        will be one step old with potential correctness drawbacks). Only used
+        when the embedding feature is set to be v1.
+
+    Returns:
+      Instance of the TPUEmbedding mid level API.
+
+    Raises:
+      NotImplementedError: If the embedding_feature is v2.
+      ValueError: If the embedding_feature if not one of the EmbeddingFeature
+        Enum.
+    """
+    if not using_tpu or embedding_feature is None:
+      return tf.tpu.experimental.embedding.TPUEmbeddingForServing(
+          self._feature_config, self._optimizer)
+    if embedding_feature == _EMBEDDING_UNSUPPORTED:
+      return tf.tpu.experimental.embedding.TPUEmbeddingV0(
+          self._feature_config, self._optimizer)
+    elif embedding_feature == _EMBEDDING_V1:
+      return tf.tpu.experimental.embedding.TPUEmbedding(
+          self._feature_config, self._optimizer,
+          pipeline_execution_with_tensor_core)
+    elif embedding_feature == _EMBEDDING_V2:
+      raise NotImplementedError("Embedding feature v2 is not supported yet!")
+    else:
+      raise ValueError("Unknown embedding feature {}".format(embedding_feature))
+
+  def build(self, input_shape: Union[tf.TensorShape, Iterable[tf.TensorShape]]):
+    super().build(input_shape)
+
+    if self._embedding_feature == _EMBEDDING_V1:
+      # If batch size is provided, use the old per_replica_batch_size argument
+      # to build the layer. It will assume that all the input features are
+      # below rank 2.
+      if self.batch_size is None:
+        self._tpu_embedding.build(per_replica_input_shapes=input_shape)
+      else:
+        self._tpu_embedding.build(per_replica_batch_size=self.batch_size)
+    else:
+      self._tpu_embedding.build()
+
+    if self._embedding_feature == _EMBEDDING_V1:
       # Note that self.tpu_embedding_helper_dummy matches _DUMMY_NAME above,
       # or it will appear twice in the list of saveables. Note that the Python
       # variable name should be _DUMMY_NAME too, as it is used to name internal
@@ -647,7 +708,7 @@ class TPUEmbedding(tf.keras.layers.Layer):
       for _, weight in self._tpu_embedding.embedding_tables.items():
         self._trainable_weights.append(weight)
 
-  def _tpu_embedding_lookup(self, features, weights):
+  def _tpu_embedding_lookup(self, features: Any, weights: Any) -> Any:
     """Uses TPU embedding lookup for embedding ids in features.
 
     Args:
@@ -724,7 +785,13 @@ class TPUEmbedding(tf.keras.layers.Layer):
     activations_with_trap = gradient_trap(getattr(self, _DUMMY_NAME))
     return tf.nest.pack_sequence_as(self._feature_config, activations_with_trap)
 
-  def call(self, features, weights=None, serving_config=None):
+  def call(
+      self,
+      features: Any,
+      weights: Optional[Any] = None,
+      serving_config: Optional[Union[
+          tf.tpu.experimental.embedding.FeatureConfig, Iterable]] = None  # pylint:disable=g-bare-generic
+  ) -> Any:
     """Look up features in the embedding tables and combine using weights.
 
     Args:
@@ -773,15 +840,14 @@ class TPUEmbedding(tf.keras.layers.Layer):
                          f"{tf.distribute.get_strategy()}. Please use "
                          "strategy.run when calling this layer.")
 
-    if self._using_tpu and _is_tpu_strategy(tf.distribute.get_strategy()):
+    if self._embedding_feature == _EMBEDDING_V1:
       return self._tpu_embedding_lookup(features, weights)
     else:
-      return tf.tpu.experimental.embedding.serving_embedding_lookup(
-          features, weights, self._tpu_embedding.embedding_tables,
-          self._feature_config)
+      return self._tpu_embedding(features, weights)
 
   @property
-  def embedding_tables(self):
+  def embedding_tables(
+      self) -> Dict[tf.tpu.experimental.embedding.TableConfig, tf.Variable]:
     """A mapping from table configs to tables.
 
     When instantiated under a TPU strategy, this returns a sharded variable.

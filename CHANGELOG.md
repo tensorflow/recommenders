@@ -1,6 +1,6 @@
 # Changelog
 
-## [unreleased][unreleased]
+## [0.7.0][2022-07-07]
 
 A number of changes to make factorized top-K metric computation more accurate
 and less prone to user error.

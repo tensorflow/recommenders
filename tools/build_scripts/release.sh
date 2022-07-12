@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -e   # fail and exit on any command erroring
+set -x
 
 TF_VERSION="2.9.0"
 
@@ -40,7 +41,7 @@ echo "Running tests..."
 pip install dist/*.whl
 pip install scann
 pip install pytest
-py.test -v .
+python -m pytest -v .
 
 # Publish to PyPI
 read -p "Publish? (y/n) " -r

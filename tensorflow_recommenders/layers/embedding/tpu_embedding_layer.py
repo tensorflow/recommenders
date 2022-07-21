@@ -151,8 +151,8 @@ def _clone_and_prepare_features(feature_config):
       new_table.optimizer = _normalize_and_prepare_optimizer(
           new_table.optimizer)
 
-  return (tf.nest.pack_sequence_as(feature_config, output_objects),
-          list(table_configs.items()))
+  return (tf.nest.pack_sequence_as(feature_config,
+                                   output_objects), list(table_configs.items()))
 
 
 def _update_table_configs(feature_config, table_config_map):
@@ -195,9 +195,9 @@ def _update_table_configs(feature_config, table_config_map):
 
 
 def _is_tpu_strategy(strategy):
-  return isinstance(strategy, (
-      tf.distribute.experimental.TPUStrategy,
-      tf.distribute.TPUStrategy))
+  return isinstance(
+      strategy,
+      (tf.distribute.experimental.TPUStrategy, tf.distribute.TPUStrategy))
 
 
 class TPUEmbedding(tf.keras.layers.Layer):
@@ -599,8 +599,8 @@ class TPUEmbedding(tf.keras.layers.Layer):
         for improved performance.
       batch_size: Batch size of the input feature. Deprecated, support backward
         compatibility.
-      embedding_feature: EmbeddingFeature enum, inidicating which version of
-        TPU hardware the layer should run on.
+      embedding_feature: EmbeddingFeature enum, inidicating which version of TPU
+        hardware the layer should run on.
     """
     super().__init__()
     self._feature_config, self._table_config_map = (
@@ -705,8 +705,10 @@ class TPUEmbedding(tf.keras.layers.Layer):
     else:
       # When on CPU, ensure that the embedding tables are part of the trainable
       # variables list for this layer.
-      for _, weight in self._tpu_embedding.embedding_tables.items():
-        self._trainable_weights.append(weight)
+      self._trainable_weights.extend(
+          tf.nest.flatten(
+              self._tpu_embedding.embedding_tables.values(),
+              expand_composites=True))
 
   def _tpu_embedding_lookup(self, features: Any, weights: Any) -> Any:
     """Uses TPU embedding lookup for embedding ids in features.
@@ -910,6 +912,7 @@ def _get_slot_variable_creation_fn(optimizer):
           optimizer.add_slot(table, _SLOT_NAME_MAPPING[type(optimizer)][slot],
                              initializer))
     return slots
+
   return slot_variable_creation_fn
 
 
@@ -969,15 +972,15 @@ def translate_keras_optimizer(optimizer):
     return embedding_optimizer(**params)
 
   elif isinstance(optimizer, tf.keras.optimizers.Optimizer):
-    raise ValueError("Keras optimizer %s is unsupported for TPU Embedding."
-                     % optimizer.__class__.__name__)
+    raise ValueError("Keras optimizer %s is unsupported for TPU Embedding." %
+                     optimizer.__class__.__name__)
   else:
     raise ValueError("%s is an unsupported optimizer class. Please pass a "
                      "Keras optimizer." % optimizer.__class__.__name__)
 
 
-def _ensure_unsupported_params_unchanged(
-    optimizer_params, supported_params, unsupported_params):
+def _ensure_unsupported_params_unchanged(optimizer_params, supported_params,
+                                         unsupported_params):
   """Helper function to raise exception if an unsupported param was set.
 
   The unsupported params generally have default values which we cannot
@@ -989,10 +992,10 @@ def _ensure_unsupported_params_unchanged(
 
   Args:
     optimizer_params: The Keras optimizer param object.
-    supported_params: The list of config options on the Keras optimizer which
-        we will pass to the constructor.
-    unsupported_params: The list of config options which must not be set
-        on the Keras optimizer.
+    supported_params: The list of config options on the Keras optimizer which we
+      will pass to the constructor.
+    unsupported_params: The list of config options which must not be set on the
+      Keras optimizer.
 
   Raises:
     ValueError: if the Keras optimizer set a config option which the

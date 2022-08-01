@@ -22,7 +22,7 @@ import tensorflow as tf
 Tensor = Union[tf.Tensor, tf.SparseTensor, tf.RaggedTensor]
 
 
-class CompositeOptimizer(tf.keras.optimizers.Optimizer):
+class CompositeOptimizer(tf.keras.optimizers.legacy.Optimizer):
   """An optimizer that composes multiple individual optimizers.
 
   It allows different optimizers to be applied to different subsets of the
@@ -37,15 +37,17 @@ class CompositeOptimizer(tf.keras.optimizers.Optimizer):
   For example:
   ```python
     optimizer = CompositeOptimizer([
-        (tf.keras.optimizers.SGD(), lambda: model.sparse_trainable_variables),
-        (tf.keras.optimizers.Adam(), lambda: model.dense_trainable_variables),
+        (tf.keras.optimizers.legacy.SGD(),
+            lambda: model.sparse_trainable_variables),
+        (tf.keras.optimizers.legacy.Adam(),
+            lambda: model.dense_trainable_variables),
     ])
   ```
   """
 
   def __init__(self,
                optimizers_and_vars: Sequence[
-                   Tuple[tf.keras.optimizers.Optimizer,
+                   Tuple[tf.keras.optimizers.legacy.Optimizer,
                          Callable[[], Sequence[tf.Variable]]]],
                name: str = "CompositeOptimizer") -> None:
     """Initializes an CompositeOptimizer instance.
@@ -123,7 +125,7 @@ class CompositeOptimizer(tf.keras.optimizers.Optimizer):
     return weights
 
   @property
-  def optimizers(self) -> List[tf.keras.optimizers.Optimizer]:
+  def optimizers(self) -> List[tf.keras.optimizers.legacy.Optimizer]:
     """Returns the optimizers in composite optimizer (in the original order)."""
     return [optimizer for optimizer, _ in self._optimizers_and_vars]
 

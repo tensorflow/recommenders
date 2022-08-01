@@ -48,19 +48,26 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
     grads2 = tf.constant(grad2_values)
     grads3 = tf.constant(grad3_values)
 
-    comp_optimizer1 = tf.keras.optimizers.get(optimizer1_type)
-    comp_optimizer2 = tf.keras.optimizers.get(optimizer2_type)
+    optimizer_dict = {
+        "sgd": tf.keras.optimizers.legacy.SGD,
+        "adam": tf.keras.optimizers.legacy.Adam,
+        "rmsprop": tf.keras.optimizers.legacy.RMSprop,
+        "adagrad": tf.keras.optimizers.legacy.Adagrad,
+    }
+
+    comp_optimizer1 = optimizer_dict[optimizer1_type]()
+    comp_optimizer2 = optimizer_dict[optimizer2_type]()
 
     composite_optimizer = CompositeOptimizer([
         (comp_optimizer1, lambda: [var1]),
         (comp_optimizer2, lambda: [var2, var3]),
     ])
 
-    self.assertSequenceEqual(
-        composite_optimizer.optimizers, [comp_optimizer1, comp_optimizer2])
+    self.assertSequenceEqual(composite_optimizer.optimizers,
+                             [comp_optimizer1, comp_optimizer2])
 
-    optimizer1 = tf.keras.optimizers.get(optimizer1_type)
-    optimizer2 = tf.keras.optimizers.get(optimizer2_type)
+    optimizer1 = optimizer_dict[optimizer1_type]()
+    optimizer2 = optimizer_dict[optimizer2_type]()
 
     grads_and_vars_1 = [(tf.constant(grad1_values), tf.Variable(values1))]
     grads_and_vars_2 = [(tf.constant(grad2_values), tf.Variable(values2)),

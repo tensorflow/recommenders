@@ -705,10 +705,7 @@ class TPUEmbedding(tf.keras.layers.Layer):
     else:
       # When on CPU, ensure that the embedding tables are part of the trainable
       # variables list for this layer.
-      self._trainable_weights.extend(
-          tf.nest.flatten(
-              self._tpu_embedding.embedding_tables.values(),
-              expand_composites=True))
+      setattr(self, _DUMMY_NAME, self._tpu_embedding.embedding_tables.values())
 
   def _tpu_embedding_lookup(self, features: Any, weights: Any) -> Any:
     """Uses TPU embedding lookup for embedding ids in features.

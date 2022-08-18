@@ -21,14 +21,14 @@ import tensorflow.compat.v2 as tf
 _SLOT_NAME_MAPPING = {
     # Slot names in Keras optimizer v2 are different compared to the slot names
     # in our API.
-    tf.keras.optimizers.Adagrad: {
+    "Adagrad": {
         "accumulators": "accumulator"
     },
-    tf.keras.optimizers.Adam: {
+    "Adam": {
         "momenta": "m",
         "velocities": "v"
     },
-    tf.keras.optimizers.Ftrl: {
+    "Ftrl": {
         "accumulators": "accumulator",
         "linears": "linear"
     },
@@ -37,19 +37,17 @@ _OPTIMIZER_PARAMETERS = {
     # A tuple: first element is the embedding optimizer class. Second is the
     # list of supported hyper parameters and the second list is the unsupported
     # hyperparameters.
-    tf.keras.optimizers.Adam: (tf.tpu.experimental.embedding.Adam,
-                               ["learning_rate", "beta_1", "beta_2",
-                                "epsilon"], ["decay", "amsgrad"]),
-    tf.keras.optimizers.Adagrad:
-        (tf.tpu.experimental.embedding.Adagrad,
-         ["learning_rate", "initial_accumulator_value"], ["epsilon"]),
-    tf.keras.optimizers.Ftrl: (tf.tpu.experimental.embedding.FTRL, [
+    "Adam": (tf.tpu.experimental.embedding.Adam,
+             ["learning_rate", "beta_1", "beta_2",
+              "epsilon"], ["decay", "amsgrad"]),
+    "Adagrad": (tf.tpu.experimental.embedding.Adagrad,
+                ["learning_rate", "initial_accumulator_value"], ["epsilon"]),
+    "Ftrl": (tf.tpu.experimental.embedding.FTRL, [
         "learning_rate", "learning_rate_power", "l1_regularization_strength",
         "l2_regularization_strength", "beta", "initial_accumulator_value"
     ], ["l2_shrinkage_regularization_strength"]),
-    tf.keras.optimizers.SGD:
-        (tf.tpu.experimental.embedding.SGD, ["learning_rate"],
-         ["decay", "momentum", "nesterov"])
+    "SGD": (tf.tpu.experimental.embedding.SGD, ["learning_rate"],
+            ["decay", "momentum", "nesterov"])
 }
 _DUMMY_NAME = "tpu_embedding_helper_dummy"
 
@@ -906,8 +904,9 @@ def _get_slot_variable_creation_fn(optimizer):
     slots = {}
     for slot, initializer in zip(slot_names, slot_initializers):
       slots[slot] = no_dependency_fn(
-          optimizer.add_slot(table, _SLOT_NAME_MAPPING[type(optimizer)][slot],
-                             initializer))
+          optimizer.add_slot(
+              table, _SLOT_NAME_MAPPING[optimizer.__class__.__name__][slot],
+              initializer))
     return slots
 
   return slot_variable_creation_fn
@@ -934,10 +933,15 @@ def translate_keras_optimizer(optimizer):
   Returns:
     the tpu_embedding parameter object corresponding to optimizer.
   """
+  if isinstance(optimizer, tf.keras.optimizers.experimental.Optimizer):
+    raise ValueError(
+        "New Keras optimizer cannot work with TPUEmbedding, please set your "
+        "optimizer as a `tf.keras.optimizers.legacy.Optimizer`, for instance "
+        "`tf.keras.optimizers.legacy.Adam`.")
 
-  if optimizer.__class__ in _OPTIMIZER_PARAMETERS:
+  if optimizer.__class__.__name__ in _OPTIMIZER_PARAMETERS:
     embedding_optimizer, supported, unsupported = (
-        _OPTIMIZER_PARAMETERS[optimizer.__class__])
+        _OPTIMIZER_PARAMETERS[optimizer.__class__.__name__])
     config = optimizer.get_config()
     # We need to handle learning_rate specially so that we can properly support
     # dynamic learning rate. Depending on what the user passed for learning_rate
@@ -962,7 +966,7 @@ def translate_keras_optimizer(optimizer):
 
     params = {k: config[k] for k in supported}
     # If the optimizer has slots, add the slot variable creation fn.
-    if optimizer.__class__ in _SLOT_NAME_MAPPING:
+    if optimizer.__class__.__name__ in _SLOT_NAME_MAPPING:
       params["slot_variable_creation_fn"] = _get_slot_variable_creation_fn(
           optimizer)
 

@@ -118,7 +118,7 @@ def _check_candidates_with_identifiers(candidates: tf.data.Dataset) -> None:
     if len(spec) != 2:
       raise ValueError(
           "The dataset must yield candidate embeddings or "
-          "tuples of (candidate embeddings, candidate identifiers). "
+          "tuples of (candidate identifiers, candidate embeddings). "
           f"Got {spec} instead."
       )
 

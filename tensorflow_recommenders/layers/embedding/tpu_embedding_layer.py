@@ -91,7 +91,9 @@ def _normalize_and_prepare_optimizer(optimizer):
     else:
       raise ValueError("Unknown optimizer name '{}'. Please use one of 'sgd',"
                        "'adagrad', 'adam', or 'ftrl'".format(optimizer))
-  elif isinstance(optimizer, tf.keras.optimizers.Optimizer):
+  elif isinstance(
+      optimizer,
+      (tf.keras.optimizers.Optimizer, tf.keras.optimizers.legacy.Optimizer)):
     return translate_keras_optimizer(optimizer)
   else:
     raise ValueError(

@@ -386,9 +386,10 @@ class Streaming(TopK):
 
     return self
 
-  def index(self,
-            candidates: tf.data.Dataset,
-            identifiers: Optional[tf.data.Dataset] = None) -> "Streaming":
+  def index(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
+      self,
+      candidates: tf.data.Dataset,
+      identifiers: Optional[tf.data.Dataset] = None) -> "Streaming":
     """Not implemented. Please call `index_from_dataset` instead."""
 
     raise NotImplementedError(

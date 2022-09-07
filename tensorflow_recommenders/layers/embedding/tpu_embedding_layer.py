@@ -1006,8 +1006,12 @@ def _ensure_unsupported_params_unchanged(optimizer_params, supported_params,
   """
   error_template = (
       "Optimizer parameter %s is unsupported for TPU embeddings. Please "
-      "construct a new optimizer for embedding if you wish to use this "
-      "setting for model training.")
+      "construct a new optimizer for embedding if you wish to use this setting "
+      "for model training. Note if you are using a dynamic learning rate "
+      "schedule, the use of a new embedding specific optimizer will not "
+      "automatically carry over your learning rate schedule. The learning rate "
+      "will stay the same as the learning rate when the embedding layer was "
+      "first defined (which is probably not the intended behavior).")
 
   for attr in ["clipnorm", "clipvalue"]:
     if getattr(optimizer_params, attr, None) is not None:

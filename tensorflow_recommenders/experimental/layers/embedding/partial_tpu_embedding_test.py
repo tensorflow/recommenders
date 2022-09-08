@@ -61,7 +61,7 @@ class PartialTPUEmbeddingTest(tf.test.TestCase):
 
     embedding_layer = tfrs.experimental.layers.embedding.PartialTPUEmbedding(
         feature_config=feature_config,
-        optimizer=tf.keras.optimizers.Adam(),
+        optimizer=tf.keras.optimizers.legacy.Adam(),
         size_threshold=10)
 
     tpu_embedding_tables = embedding_layer.tpu_embedding.embedding_tables
@@ -96,7 +96,7 @@ class PartialTPUEmbeddingTest(tf.test.TestCase):
 
     embedding_layer = tfrs.experimental.layers.embedding.PartialTPUEmbedding(
         feature_config=feature_config,
-        optimizer=tf.keras.optimizers.Adam(),
+        optimizer=tf.keras.optimizers.legacy.Adam(),
         size_threshold=None)
 
     self.assertIsNone(embedding_layer.tpu_embedding)
@@ -113,7 +113,7 @@ class PartialTPUEmbeddingTest(tf.test.TestCase):
         vocab_sizes=[5, 20, 8, 9, 15], embedding_dims=[2, 4, 6, 8, 10])
     embedding_layer = tfrs.experimental.layers.embedding.PartialTPUEmbedding(
         feature_config=feature_config,
-        optimizer=tf.keras.optimizers.Adam(),
+        optimizer=tf.keras.optimizers.legacy.Adam(),
         size_threshold=0)
 
     self.assertLen(embedding_layer.tpu_embedding.embedding_tables, 5)

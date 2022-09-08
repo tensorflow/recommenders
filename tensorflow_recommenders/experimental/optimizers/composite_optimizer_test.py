@@ -96,8 +96,8 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
 
     # Test same variable in two optimizers.
     composite_optimizer = CompositeOptimizer([
-        (tf.keras.optimizers.Adam(), lambda: [var1]),
-        (tf.keras.optimizers.Adagrad(), lambda: [var1, var2]),
+        (tf.keras.optimizers.legacy.Adam(), lambda: [var1]),
+        (tf.keras.optimizers.legacy.Adagrad(), lambda: [var1, var2]),
     ])
 
     grads_and_vars = list(zip([grads1, grads2], [var1, var2]))
@@ -107,8 +107,8 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
 
     # Test missing variable (var3) in optimizers.
     composite_optimizer = CompositeOptimizer([
-        (tf.keras.optimizers.Adam(), lambda: [var1]),
-        (tf.keras.optimizers.Adagrad(), lambda: [var2]),
+        (tf.keras.optimizers.legacy.Adam(), lambda: [var1]),
+        (tf.keras.optimizers.legacy.Adagrad(), lambda: [var2]),
     ])
 
     grads_and_vars = list(zip([grads1, grads2, grads3], [var1, var2, var3]))
@@ -122,9 +122,9 @@ class CompositeOptimizerTest(tf.test.TestCase, parameterized.TestCase):
       model = tf.keras.experimental.LinearModel(units=10)
 
       composite_optimizer = CompositeOptimizer([
-          (tf.keras.optimizers.Adam(),
+          (tf.keras.optimizers.legacy.Adam(),
            lambda: model.trainable_variables[:1]),
-          (tf.keras.optimizers.Adagrad(),
+          (tf.keras.optimizers.legacy.Adagrad(),
            lambda: model.trainable_variables[1:]),
       ])
       model.compile(optimizer=composite_optimizer,

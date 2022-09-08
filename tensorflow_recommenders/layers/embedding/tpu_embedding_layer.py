@@ -974,7 +974,10 @@ def translate_keras_optimizer(optimizer):
 
     return embedding_optimizer(**params)
 
-  elif isinstance(optimizer, tf.keras.optimizers.Optimizer):
+  elif isinstance(
+      optimizer,
+      (tf.keras.optimizers.Optimizer, tf.keras.optimizers.legacy.Optimizer,
+       tf.keras.optimizers.experimental.Optimizer)):
     raise ValueError("Keras optimizer %s is unsupported for TPU Embedding." %
                      optimizer.__class__.__name__)
   else:

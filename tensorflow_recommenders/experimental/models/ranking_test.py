@@ -142,7 +142,7 @@ class RankingTest(tf.test.TestCase, parameterized.TestCase):
 
     embedding_feature_config = _get_tpu_embedding_feature_config(
         vocab_sizes=vocabulary_sizes, embedding_dim=16)
-    optimizer = tf.keras.optimizers.Adam()
+    optimizer = tf.keras.optimizers.legacy.Adam()
 
     model = tfrs.experimental.models.Ranking(
         embedding_layer=tfrs.experimental.layers.embedding.PartialTPUEmbedding(

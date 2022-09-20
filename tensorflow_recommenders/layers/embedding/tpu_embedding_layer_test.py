@@ -294,13 +294,13 @@ def _get_total_loss_tensor(activations):
 
 def _create_optimizer(optimizer_name='adagrad'):
   if optimizer_name == 'sgd':
-    return tf.keras.optimizers.SGD(learning_rate=0.1)
+    return tf.keras.optimizers.legacy.SGD(learning_rate=0.1)
   elif optimizer_name == 'adagrad':
-    return tf.keras.optimizers.Adagrad(
+    return tf.keras.optimizers.legacy.Adagrad(
         learning_rate=0.1,
         initial_accumulator_value=10)
   elif optimizer_name == 'adam':
-    return tf.keras.optimizers.Adam(
+    return tf.keras.optimizers.legacy.Adam(
         learning_rate=0.1,
         beta_1=0.9,
         beta_2=0.999,

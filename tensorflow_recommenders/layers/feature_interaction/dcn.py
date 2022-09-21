@@ -120,6 +120,7 @@ class Cross(tf.keras.layers.Layer):
           kernel_regularizer=self._kernel_regularizer,
           bias_regularizer=self._bias_regularizer,
           use_bias=self._use_bias,
+          dtype=self.dtype,
       )
     else:
       self._dense_u = tf.keras.layers.Dense(
@@ -127,6 +128,7 @@ class Cross(tf.keras.layers.Layer):
           kernel_initializer=_clone_initializer(self._kernel_initializer),
           kernel_regularizer=self._kernel_regularizer,
           use_bias=False,
+          dtype=self.dtype,
       )
       self._dense_v = tf.keras.layers.Dense(
           last_dim,
@@ -135,6 +137,7 @@ class Cross(tf.keras.layers.Layer):
           kernel_regularizer=self._kernel_regularizer,
           bias_regularizer=self._bias_regularizer,
           use_bias=self._use_bias,
+          dtype=self.dtype,
       )
     self.built = True
 
@@ -167,6 +170,8 @@ class Cross(tf.keras.layers.Layer):
       prod_output = self._dense(x)
     else:
       prod_output = self._dense_v(self._dense_u(x))
+
+    prod_output = tf.cast(prod_output, self.compute_dtype)
 
     if self._diag_scale:
       prod_output = prod_output + self._diag_scale * x

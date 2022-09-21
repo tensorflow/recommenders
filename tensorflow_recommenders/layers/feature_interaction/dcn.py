@@ -67,6 +67,9 @@ class Cross(tf.keras.layers.Layer):
           identity matrix.
         use_bias: whether to add a bias term for this layer. If set to False,
           no bias term will be used.
+        preactivation: Activation applied to output matrix of the layer, before
+          multiplication with the input. Can be used to control the scale of the
+          layer's outputs and improve stability.
         kernel_initializer: Initializer to use on the kernel matrix.
         bias_initializer: Initializer to use on the bias vector.
         kernel_regularizer: Regularizer to use on the kernel matrix.
@@ -81,6 +84,7 @@ class Cross(tf.keras.layers.Layer):
       projection_dim: Optional[int] = None,
       diag_scale: Optional[float] = 0.0,
       use_bias: bool = True,
+      preactivation: Optional[Union[str, tf.keras.layers.Activation]] = None,
       kernel_initializer: Union[
           Text, tf.keras.initializers.Initializer] = "truncated_normal",
       bias_initializer: Union[Text,
@@ -96,6 +100,7 @@ class Cross(tf.keras.layers.Layer):
     self._projection_dim = projection_dim
     self._diag_scale = diag_scale
     self._use_bias = use_bias
+    self._preactivation = tf.keras.activations.get(preactivation)
     self._kernel_initializer = tf.keras.initializers.get(kernel_initializer)
     self._bias_initializer = tf.keras.initializers.get(bias_initializer)
     self._kernel_regularizer = tf.keras.regularizers.get(kernel_regularizer)
@@ -121,6 +126,7 @@ class Cross(tf.keras.layers.Layer):
           bias_regularizer=self._bias_regularizer,
           use_bias=self._use_bias,
           dtype=self.dtype,
+          activation=self._preactivation,
       )
     else:
       self._dense_u = tf.keras.layers.Dense(
@@ -138,6 +144,7 @@ class Cross(tf.keras.layers.Layer):
           bias_regularizer=self._bias_regularizer,
           use_bias=self._use_bias,
           dtype=self.dtype,
+          activation=self._preactivation,
       )
     self.built = True
 
@@ -186,6 +193,8 @@ class Cross(tf.keras.layers.Layer):
             self._diag_scale,
         "use_bias":
             self._use_bias,
+        "preactivation":
+            tf.keras.activations.serialize(self._preactivation),
         "kernel_initializer":
             tf.keras.initializers.serialize(self._kernel_initializer),
         "bias_initializer":
@@ -195,7 +204,7 @@ class Cross(tf.keras.layers.Layer):
         "bias_regularizer":
             tf.keras.regularizers.serialize(self._bias_regularizer),
     }
-    base_config = super(Cross, self).get_config()
+    base_config = super().get_config()
     return dict(list(base_config.items()) + list(config.items()))
 
 

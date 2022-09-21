@@ -75,7 +75,7 @@ class CrossTest(tf.test.TestCase):
     self.assertAllClose(np.asarray([[0.65, 1., 1.35]]), output)
 
   def test_serialization(self):
-    layer = Cross(projection_dim=None)
+    layer = Cross(projection_dim=None, preactivation="swish")
     serialized_layer = tf.keras.layers.serialize(layer)
     new_layer = tf.keras.layers.deserialize(serialized_layer)
     self.assertEqual(layer.get_config(), new_layer.get_config())
@@ -88,6 +88,17 @@ class CrossTest(tf.test.TestCase):
     output = layer(x0, x)
     self.evaluate(tf.compat.v1.global_variables_initializer())
     self.assertAllClose(np.asarray([[0.59, 0.9, 1.23]]), output)
+
+  def test_preactivation(self):
+    x0 = np.asarray([[0.1, 0.2, 0.3]]).astype(np.float32)
+    x = np.asarray([[0.4, 0.5, 0.6]]).astype(np.float32)
+    layer = Cross(
+        projection_dim=None,
+        preactivation=tf.zeros_like
+    )
+    output = layer(x0, x)
+    self.evaluate(tf.compat.v1.global_variables_initializer())
+    self.assertAllClose(x, output)
 
   def test_save_model(self):
 

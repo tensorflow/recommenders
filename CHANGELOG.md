@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.7.1][2022-09-28]
+## [0.7.2][2022-09-28]
 
 -   Improved support for using TPUEmbedding under parameter server strategy.
 

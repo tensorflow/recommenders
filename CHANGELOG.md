@@ -1,5 +1,12 @@
 # Changelog
 
+## [unreleased][unreleased]
+
+### Changed
+
+-   The `Retrieval` task now accepts a list of factorized metrics instead of a
+    single optional metric.
+
 ## [0.7.2][2022-09-28]
 
 -   Improved support for using TPUEmbedding under parameter server strategy.

@@ -15,6 +15,8 @@
 # lint-as: python3
 """Factorized retrieval top K metrics."""
 
+import abc
+
 from typing import List, Optional, Sequence, Union
 
 import tensorflow as tf
@@ -22,7 +24,32 @@ import tensorflow as tf
 from tensorflow_recommenders import layers
 
 
-class FactorizedTopK(tf.keras.layers.Layer):
+class Factorized(tf.keras.layers.Layer, abc.ABC):
+  """Computes metrics across top K candidates surfaced by a retrieval model."""
+
+  @abc.abstractmethod
+  def update_state(
+      self,
+      query_embeddings: tf.Tensor,
+      true_candidate_embeddings: tf.Tensor,
+      true_candidate_ids: Optional[tf.Tensor] = None
+  ) -> tf.Operation:
+
+    raise NotImplementedError()
+
+  def reset_states(self) -> None:
+    """Resets the metrics."""
+
+    for metric in self.metrics:
+      metric.reset_states()
+
+  def result(self) -> List[tf.Tensor]:
+    """Returns a list of metric results."""
+
+    return [metric.result() for metric in self.metrics]
+
+
+class FactorizedTopK(Factorized):
   """Computes metrics for across top K candidates surfaced by a retrieval model.
 
   The default metric is top K categorical accuracy: how often the true candidate
@@ -163,14 +190,3 @@ class FactorizedTopK(tf.keras.layers.Layer):
         update_ops.append(metric.update_state(top_k_accuracy))
 
     return tf.group(update_ops)
-
-  def reset_states(self) -> None:
-    """Resets the metrics."""
-
-    for metric in self.metrics:
-      metric.reset_states()
-
-  def result(self) -> List[tf.Tensor]:
-    """Returns a list of metric results."""
-
-    return [metric.result() for metric in self.metrics]

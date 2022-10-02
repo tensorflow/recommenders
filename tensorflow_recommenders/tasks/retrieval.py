@@ -15,7 +15,7 @@
 # Lint-as: python3
 """A factorized retrieval task."""
 
-from typing import Optional, Text, List
+from typing import Optional, Sequence, Union, Text, List
 
 import tensorflow as tf
 
@@ -41,7 +41,10 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
   def __init__(self,
                loss: Optional[tf.keras.losses.Loss] = None,
-               metrics: Optional[tfrs_metrics.FactorizedTopK] = None,
+               metrics: Optional[Union[
+                   Sequence[tfrs_metrics.Factorized],
+                   tfrs_metrics.Factorized
+               ]] = None,
                batch_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
                loss_metrics: Optional[List[tf.keras.metrics.Metric]] = None,
                temperature: Optional[float] = None,
@@ -81,6 +84,11 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     self._loss = loss if loss is not None else tf.keras.losses.CategoricalCrossentropy(
         from_logits=True, reduction=tf.keras.losses.Reduction.SUM)
 
+    if metrics is None:
+      metrics = []
+    if not isinstance(metrics, Sequence):
+      metrics = [metrics]
+
     self._factorized_metrics = metrics
     self._batch_metrics = batch_metrics or []
     self._loss_metrics = loss_metrics or []
@@ -89,15 +97,22 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     self._remove_accidental_hits = remove_accidental_hits
 
   @property
-  def factorized_metrics(self) -> Optional[tfrs_metrics.FactorizedTopK]:
+  def factorized_metrics(self) -> Optional[
+      Sequence[tfrs_metrics.Factorized]]:
     """The metrics object used to compute retrieval metrics."""
 
     return self._factorized_metrics
 
   @factorized_metrics.setter
   def factorized_metrics(self,
-                         value: Optional[tfrs_metrics.FactorizedTopK]) -> None:
+                         value: Optional[Union[
+                             Sequence[tfrs_metrics.Factorized],
+                             tfrs_metrics.Factorized
+                         ]]) -> None:
     """Sets factorized metrics."""
+
+    if not isinstance(value, Sequence):
+      value = []
 
     self._factorized_metrics = value
 
@@ -173,15 +188,17 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       update_ops.append(
           metric.update_state(loss, sample_weight=sample_weight))
 
-    if self._factorized_metrics is not None and compute_metrics:
-      update_ops.append(
-          self._factorized_metrics.update_state(
-              query_embeddings,
-              # Slice to the size of query embeddings if `candidate_embeddings`
-              # contains extra negatives.
-              candidate_embeddings[:tf.shape(query_embeddings)[0]],
-              true_candidate_ids=candidate_ids)
-      )
+    if compute_metrics:
+      for metric in self._factorized_metrics:
+        update_ops.append(
+            metric.update_state(
+                query_embeddings,
+                # Slice to the size of query embeddings
+                # if `candidate_embeddings` contains extra negatives.
+                candidate_embeddings[:tf.shape(query_embeddings)[0]],
+                true_candidate_ids=candidate_ids)
+        )
+
     if compute_batch_metrics:
       for metric in self._batch_metrics:
         update_ops.append(metric.update_state(labels, scores))

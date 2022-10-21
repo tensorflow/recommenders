@@ -121,8 +121,8 @@ def _sample_list(
   ]
 
   return (
-      tf.concat(sampled_movie_titles, 0),
-      tf.concat(sampled_ratings, 0),
+      tf.stack(sampled_movie_titles, 0),
+      tf.stack(sampled_ratings, 0),
   )
 
 

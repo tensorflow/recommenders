@@ -8,4 +8,5 @@ function install_tf() {
   else
     pip install -q "tensorflow==$version"
   fi
+  pip install -q urllib3
 }

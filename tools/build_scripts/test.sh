@@ -9,4 +9,4 @@ source ./tools/build_scripts/pip_install.sh
 pip install pytest
 
 # Run tests.
-python3 -m pytest -v .
+python3.10 -m pytest -v .

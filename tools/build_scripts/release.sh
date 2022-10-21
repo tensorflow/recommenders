@@ -17,8 +17,8 @@ fi
 # Import build functions.
 source ./tools/build_scripts/utils.sh
 
-which python3
-python3 --version
+which python3.10
+python3.10 --version
 
 # Install PyPI-related packages.
 pip install -q --upgrade setuptools pip
@@ -30,8 +30,8 @@ git checkout $GIT_COMMIT_ID
 echo "Building source distribution..."
 
 # Build the wheels
-python setup.py sdist $SETUP_ARGS
-python setup.py bdist_wheel $SETUP_ARGS
+python3.10 setup.py sdist $SETUP_ARGS
+python3.10 setup.py bdist_wheel $SETUP_ARGS
 
 # Check setup.py.
 twine check dist/*
@@ -41,7 +41,7 @@ echo "Running tests..."
 pip install dist/*.whl
 pip install scann
 pip install pytest
-python -m pytest -v .
+python3.10 -m pytest -v .
 
 # Publish to PyPI
 read -p "Publish? (y/n) " -r

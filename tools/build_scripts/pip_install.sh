@@ -10,8 +10,8 @@ set -e   # fail and exit on any command erroring
 # Import build functions.
 source ./tools/build_scripts/utils.sh
 
-which python3
-python3 --version
+which python3.10
+python3.10 --version
 
 # Install pip
 echo "Upgrading pip."
@@ -27,6 +27,6 @@ pip install -e .[docs]
 
 # Test successful build.
 echo "Testing import..."
-python3 -c "import tensorflow_recommenders as tfrs"
+python3.10 -c "import tensorflow_recommenders as tfrs"
 
 echo "Done."

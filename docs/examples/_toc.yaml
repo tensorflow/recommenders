@@ -12,6 +12,8 @@ toc:
     path: /recommenders/examples/diststrat_retrieval
   - title: "Retrieval with sequential model"
     path: /recommenders/examples/sequential_retrieval
+  - title: "Retrieval with TFX"
+    path: /tfx/tutorials/tfx/recommenders
   - title: "Ranking with TFX"
     path: /recommenders/examples/ranking_tfx
 - title: "Using rich features"

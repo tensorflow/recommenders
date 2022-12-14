@@ -13,9 +13,12 @@ toc:
   - title: "Retrieval with sequential model"
     path: /recommenders/examples/sequential_retrieval
   - title: "Retrieval with TFX"
+    status: external
     path: /tfx/tutorials/tfx/recommenders
   - title: "Ranking with TFX"
     path: /recommenders/examples/ranking_tfx
+  - title: "Large Embeddings with TPU"
+    path: /recommenders/examples/tpu_embedding_layer
 - title: "Using rich features"
   style: accordion
   section:

@@ -33,7 +33,7 @@ def test_cases(
     batch_size=(3, 16),
     num_queries=(3, 15, 16),
     num_candidates=(1024, 128),
-    indices_dtype=(np.str, None),
+    indices_dtype=(str, None),
     use_exclusions=(True, False)) -> Iterator[Dict[str, Any]]:
   """Generates test cases.
 
@@ -175,7 +175,7 @@ class BruteForceTest(FactorizedTopKTestBase):
 
 class ScannTest(FactorizedTopKTestBase):
 
-  @parameterized.parameters(np.str, np.float32, np.float64, np.int32, np.int64)
+  @parameterized.parameters(str, np.float32, np.float64, np.int32, np.int64)
   def test_scann(self, identifier_dtype):
 
     num_candidates, num_queries = (1000, 4)

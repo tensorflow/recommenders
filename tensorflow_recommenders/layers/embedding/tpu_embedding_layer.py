@@ -189,6 +189,7 @@ def _update_table_configs(feature_config, table_config_map):
             table=table_config_dict[config.table],
             max_sequence_length=config.max_sequence_length,
             validate_weights_and_indices=config.validate_weights_and_indices,
+            output_shape=config.output_shape,
             name=config.name))
 
   return tf.nest.pack_sequence_as(feature_config, output_objects)

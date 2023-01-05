@@ -112,7 +112,7 @@ class SamplingProbabilityCorrectionTest(
     logits = rng.uniform(size=shape).astype(np.float32)
     probs = rng.uniform(size=shape[0]).astype(np.float32)
 
-    corrected_logits = loss.SamplingProbablityCorrection()(logits, probs)
+    corrected_logits = loss.SamplingProbabilityCorrection()(logits, probs)
     corrected_logits = corrected_logits.numpy()
 
     np.testing.assert_array_less(logits, corrected_logits)
@@ -120,7 +120,7 @@ class SamplingProbabilityCorrectionTest(
     # set some of the probabilities to 0
     probs_with_zeros = probs * rng.choice([0., 1.], size=probs.shape)
 
-    corrected_logits_with_zeros = loss.SamplingProbablityCorrection()(
+    corrected_logits_with_zeros = loss.SamplingProbabilityCorrection()(
         logits, probs_with_zeros)
     corrected_logits_with_zeros = corrected_logits_with_zeros.numpy()
 

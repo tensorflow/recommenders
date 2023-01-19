@@ -134,8 +134,11 @@ def _clone_and_prepare_features(feature_config):
             dim=config.table.dim,
             initializer=config.table.initializer,
             optimizer=config.table.optimizer,
+            quantization_config=config.table.quantization_config,
             combiner=config.table.combiner,
-            name=config.table.name))
+            name=config.table.name,
+        ),
+    )
 
     output_objects.append(
         tf.tpu.experimental.embedding.FeatureConfig(

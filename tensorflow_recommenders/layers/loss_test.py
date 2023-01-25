@@ -31,6 +31,7 @@ class LossTest(tf.test.TestCase, parameterized.TestCase):
     """Test hard negative mining."""
 
     num_hard_negatives = 3
+    # (num_queries, num_candidates)
     shape = (2, 20)
     rng = np.random.RandomState(random_seed)
 
@@ -63,6 +64,7 @@ class LossTest(tf.test.TestCase, parameterized.TestCase):
   @parameterized.parameters(42, 123, 8391, 12390, 1230)
   def test_remove_accidental_hits(self, random_seed):
 
+    # (num_queries, num_candidates)
     shape = (2, 4)
     rng = np.random.RandomState(random_seed)
 
@@ -106,11 +108,12 @@ class SamplingProbabilityCorrectionTest(
   def test_sampling_probability_correction(self, random_seed):
     """Test sampling probability correction."""
 
-    shape = (10, 10)
+    # (num_queries, num_candidates)
+    shape = (10, 20)
     rng = np.random.RandomState(random_seed)
 
     logits = rng.uniform(size=shape).astype(np.float32)
-    probs = rng.uniform(size=shape[0]).astype(np.float32)
+    probs = rng.uniform(size=shape[1]).astype(np.float32)
 
     corrected_logits = loss.SamplingProbablityCorrection()(logits, probs)
     corrected_logits = corrected_logits.numpy()

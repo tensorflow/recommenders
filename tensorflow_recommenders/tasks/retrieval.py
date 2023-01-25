@@ -137,8 +137,12 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     Args:
       query_embeddings: [num_queries, embedding_dim] tensor of query
         representations.
-      candidate_embeddings: [num_queries, embedding_dim] tensor of candidate
-        representations.
+      candidate_embeddings: [num_candidates, embedding_dim] tensor of candidate
+        representations. Normally, `num_candidates` is the same as
+        `num_queries`: there is a positive candidate corresponding for every
+        query. However, it is also possible for `num_candidates` to be larger
+        than `num_queries`. In this case, the extra candidates will be used an
+        extra negatives for all queries.
       sample_weight: [num_queries] tensor of sample weights.
       candidate_sampling_probability: Optional tensor of candidate sampling
         probabilities. When given will be be used to correct the logits to

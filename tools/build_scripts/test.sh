@@ -6,7 +6,7 @@ set -e   # fail and exit on any command erroring
 source ./tools/build_scripts/pip_install.sh
 
 # Install test dependencies.
-pip install pytest
+python3.10 -m pip install pytest
 
 # Run tests.
 python3.10 -m pytest -v .

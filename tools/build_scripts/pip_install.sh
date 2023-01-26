@@ -15,15 +15,16 @@ python3.10 --version
 
 # Install pip
 echo "Upgrading pip."
-pip install --upgrade pip
+python3.10 -m pip install --upgrade pip
 
 # Install TensorFlow.
 echo "Installing TensorFlow..."
-install_tf "$TF_VERSION"
+python3.10 -m pip install tensorflow
+python3.10 -m pip install -q urllib3
 
 # Install TensorFlow Recommenders.
 echo "Installing TensorFlow Recommenders..."
-pip install -e .[docs]
+python3.10 -m pip install -e .[docs]
 
 # Test successful build.
 echo "Testing import..."

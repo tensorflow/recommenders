@@ -21,8 +21,7 @@ which python3.10
 python3.10 --version
 
 # Install PyPI-related packages.
-pip install -q --upgrade setuptools pip
-pip install -q wheel twine pyopenssl
+python3.10 -m pip install -q wheel twine pyopenssl
 
 echo "Checking out commit $GIT_COMMIT_ID..."
 git checkout $GIT_COMMIT_ID
@@ -38,9 +37,9 @@ twine check dist/*
 
 # Install and test the distribution
 echo "Running tests..."
-pip install dist/*.whl
-pip install scann
-pip install pytest
+python3.10 -m pip install dist/*.whl
+python3.10 -m pip install scann
+python3.10 -m pip install pytest
 python3.10 -m pytest -v .
 
 # Publish to PyPI

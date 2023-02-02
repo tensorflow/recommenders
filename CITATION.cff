@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Kula"
+  given-names: "Maciej"
+- family-names: "Chen"
+  given-names: "James"
+- family-names: "Yi"
+  given-names: "Xinyang"
+- family-names: "Yao"
+  given-names: "Tiansheng"
+- family-names: "Sathiamoorthy"
+  given-names: "Maheswaran"
+- family-names: "Hong"
+  given-names: "Lichan"
+- family-names: "Chi"
+  given-names: "Ed"
+title: "TensorFlow Recommenders"
+date-released: 2020-09-16
+url: "https://github.com/tensorflow/recommenders"

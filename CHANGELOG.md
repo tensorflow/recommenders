@@ -6,6 +6,8 @@
 
 -   The `Retrieval` task now accepts a list of factorized metrics instead of a
     single optional metric.
+-   `tfrs.metrics.FactorizedTopK` now accepts sample weights which are used to
+    compute weighted top k metrics.
 
 ## [0.7.2][2022-09-28]
 

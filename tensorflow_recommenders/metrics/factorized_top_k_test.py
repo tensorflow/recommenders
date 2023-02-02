@@ -47,6 +47,7 @@ class FactorizedTopKTest(tf.test.TestCase, parameterized.TestCase):
                                   embedding_dim)).astype(np.float32)
 
     query = rng.normal(size=(num_queries, embedding_dim)).astype(np.float32)
+    sample_weight = rng.uniform(size=(num_queries, 1)).astype(np.float32)
 
     true_candidate_indexes = rng.randint(0, num_candidates, size=num_queries)
     true_candidate_embeddings = candidates[true_candidate_indexes]
@@ -69,7 +70,8 @@ class FactorizedTopKTest(tf.test.TestCase, parameterized.TestCase):
     metric.update_state(
         query_embeddings=query,
         true_candidate_embeddings=true_candidate_embeddings,
-        true_candidate_ids=true_candidate_ids if use_candidate_ids else None
+        true_candidate_ids=true_candidate_ids if use_candidate_ids else None,
+        sample_weight=sample_weight,
     )
 
     for k, metric_value in zip(ks, metric.result()):
@@ -77,8 +79,11 @@ class FactorizedTopKTest(tf.test.TestCase, parameterized.TestCase):
           targets=true_candidate_indexes,
           predictions=candidate_scores,
           k=k)
-
-      self.assertAllClose(metric_value, in_top_k.numpy().mean())
+      expected_val = np.average(
+          in_top_k.numpy().astype(np.float32),
+          weights=np.squeeze(sample_weight, 1),
+      )
+      self.assertAllClose(metric_value, expected_val)
 
   @parameterized.parameters(
       layers.factorized_top_k.Streaming,

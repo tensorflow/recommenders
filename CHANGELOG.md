@@ -9,6 +9,10 @@
 -   `tfrs.metrics.FactorizedTopK` now accepts sample weights which are used to
     compute weighted top k metrics.
 
+### Added
+-   `tfrs.experimental.optimizers.ClippyAdagrad`: a new optimizer based on
+    `tf.keras.optimizers.Adagrad` that is able to improve training stability.
+
 ## [0.7.2][2022-09-28]
 
 -   Improved support for using TPUEmbedding under parameter server strategy.

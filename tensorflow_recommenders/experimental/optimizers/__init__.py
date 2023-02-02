@@ -14,4 +14,5 @@
 
 """Experimental Optimizers."""
 
+from tensorflow_recommenders.experimental.optimizers.clippy_adagrad import ClippyAdagrad
 from tensorflow_recommenders.experimental.optimizers.composite_optimizer import CompositeOptimizer

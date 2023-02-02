@@ -13,14 +13,14 @@
 # limitations under the License.
 
 """Clippy Adagrad optimizer implementation."""
-from typing import Any, Dict, Sequence, Union
+from typing import Any, Dict, Sequence, Tuple, Union
 
 import tensorflow as tf
 
 
 def shrink_by_references(tensor: tf.Tensor, references: Sequence[tf.Tensor],
                          relative_factors: Sequence[float],
-                         absolute_factor: float) -> tuple[tf.Tensor, tf.Tensor]:
+                         absolute_factor: float) -> Tuple[tf.Tensor, tf.Tensor]:
   """Shrinks a tensor such that it is element-wise smaller than a reference.
 
   Scales the given tensor such that for all index i
@@ -162,7 +162,7 @@ class ClippyAdagrad(tf.keras.optimizers.Optimizer):
 
   def build(self, var_list: Sequence[tf.Variable]) -> None:
     super().build(var_list)
-    if hasattr(self, "_built") and self._built:
+    if hasattr(self, "_built") and self._built:  # pylint: disable=access-member-before-definition
       return
     self._built = True
     self._accumulators = []

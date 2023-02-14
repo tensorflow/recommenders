@@ -17,15 +17,17 @@
 
 import math
 
+from absl.testing import parameterized
+
 import tensorflow as tf
 
 from tensorflow_recommenders.tasks import ranking
 
 
-class RankingTest(tf.test.TestCase):
+class RankingTest(tf.test.TestCase, parameterized.TestCase):
 
-  def test_task(self):
-
+  @parameterized.parameters((True,), (False,))
+  def test_task(self, enable_sample_weight):
     task = ranking.Ranking(
         metrics=[tf.keras.metrics.BinaryAccuracy(name="accuracy")],
         label_metrics=[tf.keras.metrics.Mean(name="label_mean")],
@@ -35,6 +37,9 @@ class RankingTest(tf.test.TestCase):
 
     predictions = tf.constant([[1], [0.3]], dtype=tf.float32)
     labels = tf.constant([[1], [1]], dtype=tf.float32)
+    sample_weight = None
+    if enable_sample_weight:
+      sample_weight = tf.constant([1.0, 1.0], dtype=tf.float32)
 
     # Standard log loss formula.
     expected_loss = -(math.log(1) + math.log(0.3)) / 2.0
@@ -45,7 +50,9 @@ class RankingTest(tf.test.TestCase):
         "loss_mean": expected_loss
     }
 
-    loss = task(predictions=predictions, labels=labels)
+    loss = task(
+        predictions=predictions, labels=labels, sample_weight=sample_weight
+    )
     metrics = {
         metric.name: metric.result().numpy() for metric in task.metrics
     }

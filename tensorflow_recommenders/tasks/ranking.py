@@ -108,7 +108,8 @@ class Ranking(tf.keras.layers.Layer, base.Task):
 
     for metric in self._loss_metrics:
       update_ops.append(
-          metric.update_state(loss, sample_weight=sample_weight))
+          metric.update_state(loss)
+      )  # Loss is a scalar here which is already weighted sum
 
     # Custom metrics may not return update ops, unlike built-in
     # Keras metrics.

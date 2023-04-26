@@ -1,4 +1,4 @@
-# Copyright 2022 The TensorFlow Recommenders Authors.
+# Copyright 2023 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,7 +68,9 @@ class Model(tf.keras.Model):
       loss = self.compute_loss(inputs, training=True)
 
       # Handle regularization losses as well.
-      regularization_loss = sum(self.losses)
+      regularization_loss = tf.reduce_sum(
+          [tf.reduce_sum(loss) for loss in self.losses]
+      )
 
       total_loss = loss + regularization_loss
 
@@ -88,7 +90,9 @@ class Model(tf.keras.Model):
     loss = self.compute_loss(inputs, training=False)
 
     # Handle regularization losses as well.
-    regularization_loss = sum(self.losses)
+    regularization_loss = tf.reduce_sum(
+        [tf.reduce_sum(loss) for loss in self.losses]
+    )
 
     total_loss = loss + regularization_loss
 

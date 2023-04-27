@@ -46,7 +46,7 @@ class Model(tf.keras.Model):
   https://www.tensorflow.org/guide/keras/customizing_what_happens_in_fit).
   """
 
-  def compute_loss(self, inputs, training: bool = False) -> tf.Tensor:
+  def compute_loss(self, inputs, training: bool = False) -> tf.Tensor:  # pytype: disable=signature-mismatch  # overriding-parameter-count-checks
     """Defines the loss function.
 
     Args:

@@ -81,6 +81,8 @@ class ClippyAdagrad(tf.keras.optimizers.Optimizer):
         + accumulator_relative_threshold / sqrt(accum) + absolute_threshold,
   where `accum` is the respective Adagrad accumulator.
 
+  Reference: https://arxiv.org/pdf/2302.09178.pdf.
+
   Attributes:
     iterations: The number of training steps this optimizer has run.
     learning_rate: The learning rate constant or schedule.

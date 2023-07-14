@@ -120,7 +120,7 @@ class ClippyAdagrad(tf.keras.optimizers.Optimizer):
       accumulator_relative_threshold: A non-negative floating point value. The
         clipping threshold factor relatively to the inverse square root of the
         Adagrad accumulators. Default to 0.0 but a non-negative value
-        (e.g., 1e-3) allows loosening the clipping threshold in later training.
+        (e.g., 1e-3) allows tightening the clipping threshold in later training.
       absolute_threshold: A non-negative floating point value. The absolute
         clipping threshold constant.
       epsilon: Small floating point value used to maintain numerical stability.

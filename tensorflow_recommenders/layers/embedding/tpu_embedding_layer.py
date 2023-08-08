@@ -843,7 +843,10 @@ class TPUEmbedding(tf.keras.layers.Layer):
                          f"{tf.distribute.get_strategy()}. Please use "
                          "strategy.run when calling this layer.")
 
-    if self._embedding_feature == _EMBEDDING_V1:
+    if (
+        self._embedding_feature == _EMBEDDING_V1
+        or self._embedding_feature == _EMBEDDING_V2
+    ):
       return self._tpu_embedding_lookup(features, weights)
     else:
       return self._tpu_embedding(features, weights)

@@ -199,8 +199,8 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
                 query_embeddings,
                 # Slice to the size of query embeddings
                 # if `candidate_embeddings` contains extra negatives.
-                candidate_embeddings[:tf.shape(query_embeddings)[0]],
-                true_candidate_ids=candidate_ids)
+                candidate_embeddings[:num_queries],
+                true_candidate_ids=candidate_ids[:num_queries])
         )
 
     if compute_batch_metrics:

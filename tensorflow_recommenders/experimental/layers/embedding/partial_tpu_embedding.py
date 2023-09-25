@@ -80,7 +80,9 @@ class PartialTPUEmbedding(tf.keras.layers.Layer):
       if table_config not in table_to_keras_emb:
         table_to_keras_emb[table_config] = tf.keras.layers.Embedding(
             input_dim=table_config.vocabulary_size,
-            output_dim=table_config.dim)
+            output_dim=table_config.dim,
+            embeddings_initializer=table_config.initializer or "uniform",
+        )
       self._keras_embedding_layers[name] = table_to_keras_emb[table_config]
 
     self._tpu_embedding = TPUEmbedding(

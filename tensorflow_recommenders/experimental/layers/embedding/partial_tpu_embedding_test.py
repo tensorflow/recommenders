@@ -122,6 +122,20 @@ class PartialTPUEmbeddingTest(tf.test.TestCase):
     for key, val in output.items():
       self.assertEqual(val.shape, feature_config[key].table.dim)
 
+  def test_all_tpu_embedding_with_pipelining(self):
+    feature_config = _get_tpu_embedding_feature_config(
+        vocab_sizes=[5, 20, 8, 9, 15], embedding_dims=[2, 4, 6, 8, 10])
+    embedding_layer = tfrs.experimental.layers.embedding.PartialTPUEmbedding(
+        feature_config=feature_config,
+        optimizer=tf.keras.optimizers.legacy.Adam(),
+        pipeline_execution_with_tensor_core=True,
+        size_threshold=0)
+
+    self.assertLen(embedding_layer.tpu_embedding.embedding_tables, 5)
+
+    output = embedding_layer({"0": 4, "1": 10, "2": 6, "3": 8, "4": 0})
+    for key, val in output.items():
+      self.assertEqual(val.shape, feature_config[key].table.dim)
 
 if __name__ == "__main__":
   tf.test.main()

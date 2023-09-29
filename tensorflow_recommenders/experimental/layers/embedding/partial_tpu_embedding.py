@@ -85,8 +85,11 @@ class PartialTPUEmbedding(tf.keras.layers.Layer):
         )
       self._keras_embedding_layers[name] = table_to_keras_emb[table_config]
 
-    self._tpu_embedding = TPUEmbedding(
-        tpu_feature_config, optimizer) if tpu_feature_config else None
+    self._tpu_embedding = None
+    if tpu_feature_config:
+      self._tpu_embedding = TPUEmbedding(
+          tpu_feature_config, optimizer, pipeline_execution_with_tensor_core
+      )
 
   def call(self, inputs: Dict[str, Tensor]) -> Dict[str, tf.Tensor]:
     """Computes the output of the embedding layer.

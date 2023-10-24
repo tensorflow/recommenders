@@ -206,7 +206,9 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     if compute_batch_metrics:
       for metric in self._batch_metrics:
-        update_ops.append(metric.update_state(labels, scores))
+        update_ops.append(
+            metric.update_state(labels, scores, sample_weight=sample_weight)
+        )
 
     with tf.control_dependencies(update_ops):
       return tf.identity(loss)

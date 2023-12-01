@@ -59,7 +59,8 @@ class Model(tf.keras.Model):
     """
 
     raise NotImplementedError(
-        "Implementers must implement the `compute_loss` method.")
+        "Implementers must implement the `compute_loss` method."
+    )
 
   def train_step(self, inputs):
     """Custom train step using the `compute_loss` method."""

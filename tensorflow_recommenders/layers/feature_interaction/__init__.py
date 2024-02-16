@@ -1,4 +1,4 @@
-# Copyright 2023 The TensorFlow Recommenders Authors.
+# Copyright 2024 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,3 +16,4 @@
 
 from tensorflow_recommenders.layers.feature_interaction.dcn import Cross
 from tensorflow_recommenders.layers.feature_interaction.dot_interaction import DotInteraction
+from tensorflow_recommenders.layers.feature_interaction.multi_layer_dcn import MultiLayerDCN

@@ -1,4 +1,4 @@
-# Copyright 2023 The TensorFlow Recommenders Authors.
+# Copyright 2024 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ class Ranking(models.Model):
       bottom_stack: Optional[tf.keras.layers.Layer] = None,
       feature_interaction: Optional[tf.keras.layers.Layer] = None,
       top_stack: Optional[tf.keras.layers.Layer] = None,
+      concat_dense: bool = True,
       task: Optional[tasks.Task] = None) -> None:
     """Initializes the model.
 
@@ -80,20 +81,32 @@ class Ranking(models.Model):
       top_stack: The `top_stack` layer is applied to the `feature_interaction`
         output. The output of top_stack should be in the range [0, 1]. If it is
         None, MLP with layer sizes [512, 256, 1] is used.
+      concat_dense: Weather to concatenate the interaction output with dense
+        embedding vector again before feeding into the top stack
       task: The task which the model should optimize for. Defaults to a
-        `tfrs.tasks.Ranking` task with a binary cross-entropy loss, suitable
-        for tasks like click prediction.
+        `tfrs.tasks.Ranking` task with a binary cross-entropy loss, suitable for
+        tasks like click prediction.
     """
 
     super().__init__()
 
     self._embedding_layer = embedding_layer
-    self._bottom_stack = bottom_stack if bottom_stack else layers.blocks.MLP(
-        units=[256, 64, 16], final_activation="relu")
-    self._top_stack = top_stack if top_stack else layers.blocks.MLP(
-        units=[512, 256, 1], final_activation="sigmoid")
-    self._feature_interaction = (feature_interaction if feature_interaction
-                                 else feature_interaction_lib.DotInteraction())
+    self._concat_dense = concat_dense
+    self._bottom_stack = (
+        bottom_stack
+        if bottom_stack
+        else layers.blocks.MLP(units=[256, 64, 16], final_activation="relu")
+    )
+    self._top_stack = (
+        top_stack
+        if top_stack
+        else layers.blocks.MLP(units=[512, 256, 1], final_activation="sigmoid")
+    )
+    self._feature_interaction = (
+        feature_interaction
+        if feature_interaction
+        else feature_interaction_lib.DotInteraction()
+    )
 
     if task is not None:
       self._task = task
@@ -211,8 +224,12 @@ class Ranking(models.Model):
 
     interaction_args = sparse_embedding_vecs + [dense_embedding_vec]
     interaction_output = self._feature_interaction(interaction_args)
-    feature_interaction_output = tf.concat(
-        [dense_embedding_vec, interaction_output], axis=1)
+    if self._concat_dense:
+      feature_interaction_output = tf.concat(
+          [dense_embedding_vec, interaction_output], axis=1
+      )
+    else:
+      feature_interaction_output = interaction_output
 
     prediction = self._top_stack(feature_interaction_output)
 

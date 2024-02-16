@@ -1,4 +1,4 @@
-# Copyright 2023 The TensorFlow Recommenders Authors.
+# Copyright 2024 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -127,6 +127,8 @@ class RankingTest(tf.test.TestCase, parameterized.TestCase):
           # Top stack.
           (lambda: None, lambda: tfrs.layers.blocks.MLP(
               units=[40, 20, 1], final_activation="sigmoid")),
+          # Concat Dense.
+          (True, False),
           # Use weights.
           (True, False),
           # Size threshold.
@@ -135,6 +137,7 @@ class RankingTest(tf.test.TestCase, parameterized.TestCase):
                          feature_interaction_layer,
                          bottom_stack,
                          top_stack,
+                         concat_dense=True,
                          use_weights=False,
                          size_threshold=10):
     """Tests a ranking model."""
@@ -151,7 +154,8 @@ class RankingTest(tf.test.TestCase, parameterized.TestCase):
             size_threshold=size_threshold),
         bottom_stack=bottom_stack(),
         feature_interaction=feature_interaction_layer(),
-        top_stack=top_stack())
+        top_stack=top_stack(),
+        concat_dense=concat_dense)
     model.compile(optimizer=optimizer, steps_per_execution=5)
 
     dataset = _generate_synthetic_data(

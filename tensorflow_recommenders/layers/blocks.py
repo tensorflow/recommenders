@@ -44,6 +44,10 @@ class MLP(tf.keras.layers.Layer):
     super().__init__(**kwargs)
 
     self._sublayers = []
+    self._units = units
+    self.use_bias = use_bias
+    self.activation = activation
+    self.final_activation = final_activation
 
     for num_units in units[:-1]:
       self._sublayers.append(
@@ -52,6 +56,47 @@ class MLP(tf.keras.layers.Layer):
     self._sublayers.append(
         tf.keras.layers.Dense(
             units[-1], activation=final_activation, use_bias=use_bias))
+
+
+
+  # def get_uniform_initializer(self, bottom_dim):
+  #   limit = tf.math.sqrt(1.0 / bottom_dim)
+  #   return tf.keras.initializers.RandomUniform(minval=-limit, maxval=limit)
+
+  def build(self, input_shape):
+    # The first layer's bottom_dim comes from the input shape
+    bottom_dim = input_shape[1]
+    for _, num_units in enumerate(self._units[:-1]):
+      self._sublayers.append(
+          tf.keras.layers.Dense(
+              num_units,
+              activation=self.activation,
+              use_bias=self.use_bias,
+              kernel_initializer=tf.keras.initializers.HeUniform(),
+              bias_initializer=tf.keras.initializers.RandomUniform(
+                  minval=-tf.math.sqrt(1.0 / bottom_dim),
+                  maxval=tf.math.sqrt(1.0 / bottom_dim),
+                  seed=0
+              ),
+          )
+      )
+      bottom_dim = num_units  # Update bottom_dim for the next layer
+
+    # Add the final layer
+    self._sublayers.append(
+        tf.keras.layers.Dense(
+            self._units[-1],
+            activation=self.final_activation,
+            use_bias=self.use_bias,
+            kernel_initializer=tf.keras.initializers.HeUniform(),
+            bias_initializer=tf.keras.initializers.RandomUniform(
+                minval=-tf.math.sqrt(1.0 / bottom_dim),
+                maxval=tf.math.sqrt(1.0 / bottom_dim),
+                seed=0
+            ),
+        )
+    )
+    super().build(input_shape)
 
   def call(self, x: tf.Tensor) -> tf.Tensor:
     """Performs the forward computation of the block."""

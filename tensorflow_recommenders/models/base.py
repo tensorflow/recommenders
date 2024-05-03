@@ -1,22 +1,7 @@
-# Copyright 2024 The TensorFlow Recommenders Authors.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# lint-as: python3
 """Base model."""
 
 import tensorflow as tf
-
+import numpy as np
 
 class Model(tf.keras.Model):
   """Base model for TFRS models.
@@ -65,21 +50,18 @@ class Model(tf.keras.Model):
     """Custom train step using the `compute_loss` method."""
 
     with tf.GradientTape() as tape:
-      loss = self.compute_loss(inputs, training=True)
+      loss, labels, outputs = self.compute_loss(inputs, training=True)
 
-      # Handle regularization losses as well.
-      regularization_loss = tf.reduce_sum(
-          [tf.reduce_sum(loss) for loss in self.losses]
-      )
-
-      total_loss = loss + regularization_loss
+      total_loss = loss  # + regularization_loss
 
     gradients = tape.gradient(total_loss, self.trainable_variables)
+    
     self.optimizer.apply_gradients(zip(gradients, self.trainable_variables))
 
-    metrics = {metric.name: metric.result() for metric in self.metrics}
+    self.compiled_metrics.update_state(labels, outputs)
+    metrics = self.get_metrics_result()
     metrics["loss"] = loss
-    metrics["regularization_loss"] = regularization_loss
+    metrics["regularization_loss"] = 0  # regularization_loss
     metrics["total_loss"] = total_loss
 
     return metrics
@@ -87,18 +69,13 @@ class Model(tf.keras.Model):
   def test_step(self, inputs):
     """Custom test step using the `compute_loss` method."""
 
-    loss = self.compute_loss(inputs, training=False)
-
-    # Handle regularization losses as well.
-    regularization_loss = tf.reduce_sum(
-        [tf.reduce_sum(loss) for loss in self.losses]
-    )
-
-    total_loss = loss + regularization_loss
-
-    metrics = {metric.name: metric.result() for metric in self.metrics}
+    loss, labels, outputs = self.compute_loss(inputs, training=False)
+    
+    total_loss = loss  # + regularization_loss
+    self.compiled_metrics.update_state(labels, outputs)
+    metrics = self.get_metrics_result()
     metrics["loss"] = loss
-    metrics["regularization_loss"] = regularization_loss
+    metrics["regularization_loss"] = 0  # regularization_loss
     metrics["total_loss"] = total_loss
 
-    return metrics
+    return metrics # , labels, outputs

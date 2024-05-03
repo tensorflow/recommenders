@@ -87,14 +87,19 @@ class MultiLayerDCN(tf.keras.layers.Layer):
       num_layers: Optional[int] = 3,
       use_bias: bool = True,
       kernel_initializer: Union[
-          Text, tf.keras.initializers.Initializer] = "truncated_normal",
-      bias_initializer: Union[Text,
-                              tf.keras.initializers.Initializer] = "zeros",
-      kernel_regularizer: Union[Text, None,
-                                tf.keras.regularizers.Regularizer] = None,
-      bias_regularizer: Union[Text, None,
-                              tf.keras.regularizers.Regularizer] = None,
-      **kwargs):
+          Text, tf.keras.initializers.Initializer
+      ] = "he_uniform",
+      bias_initializer: Union[
+          Text, tf.keras.initializers.Initializer
+      ] = "zeros",
+      kernel_regularizer: Union[
+          Text, None, tf.keras.regularizers.Regularizer
+      ] = None,
+      bias_regularizer: Union[
+          Text, None, tf.keras.regularizers.Regularizer
+      ] = None,
+      **kwargs
+  ):
 
     super(MultiLayerDCN, self).__init__(**kwargs)
 
@@ -113,23 +118,26 @@ class MultiLayerDCN(tf.keras.layers.Layer):
     last_dim = input_shape[-1]
     self._dense_u_kernels, self._dense_v_kernels = [], []
 
-    for _ in range(self._num_layers):
-      self._dense_u_kernels.append(tf.keras.layers.Dense(
-          self._projection_dim,
-          kernel_initializer=_clone_initializer(self._kernel_initializer),
-          kernel_regularizer=self._kernel_regularizer,
-          use_bias=False,
-          dtype=self.dtype,
-      ))
-      self._dense_v_kernels.append(tf.keras.layers.Dense(
-          last_dim,
-          kernel_initializer=_clone_initializer(self._kernel_initializer),
-          bias_initializer=self._bias_initializer,
-          kernel_regularizer=self._kernel_regularizer,
-          bias_regularizer=self._bias_regularizer,
-          use_bias=self._use_bias,
-          dtype=self.dtype,
-      ))
+    for i in range(self._num_layers):
+      self._dense_u_kernels.append(
+          tf.keras.layers.Dense(
+              self._projection_dim,
+              kernel_initializer='glorot_normal',
+              kernel_regularizer=self._kernel_regularizer,
+              use_bias=False,
+          )
+      )
+      self._dense_v_kernels.append(
+          tf.keras.layers.Dense(
+              last_dim,
+              kernel_initializer='glorot_normal',
+              bias_initializer='zeros',
+              kernel_regularizer=self._kernel_regularizer,
+              bias_regularizer=self._bias_regularizer,
+              use_bias=True,
+          )
+      )
+
 
     self.built = True
 

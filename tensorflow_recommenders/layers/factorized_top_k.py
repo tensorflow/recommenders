@@ -373,7 +373,7 @@ class Streaming(TopK):
     self._num_parallel_calls = num_parallel_calls
     self._sorted = sorted_order
 
-    self._counter = self.add_weight("counter", dtype=tf.int32, trainable=False)
+    self._counter = self.add_weight(name="counter", dtype=tf.int32, trainable=False)
 
   def index_from_dataset(
       self,
@@ -545,7 +545,7 @@ class BruteForce(TopK):
       )
 
     # We need any value that has the correct dtype.
-    identifiers_initial_value = tf.zeros((), dtype=identifiers.dtype)
+    identifiers_initial_value = tf.zeros(identifiers.shape, dtype=identifiers.dtype)
 
     self._identifiers = self.add_weight(
         name="identifiers",

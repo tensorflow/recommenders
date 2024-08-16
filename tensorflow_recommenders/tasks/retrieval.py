@@ -15,13 +15,15 @@
 # Lint-as: python3
 """A factorized retrieval task."""
 
-from typing import Optional, Sequence, Union, Text, List
+from typing import List, Optional, Sequence, Text, Union
 
+import numpy as np
 import tensorflow as tf
-
 from tensorflow_recommenders import layers
 from tensorflow_recommenders import metrics as tfrs_metrics
 from tensorflow_recommenders.tasks import base
+
+MIN_FLOAT = np.finfo(np.float32).min / 100.0
 
 
 class Retrieval(tf.keras.layers.Layer, base.Task):
@@ -116,14 +118,17 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     self._factorized_metrics = value
 
-  def call(self,
-           query_embeddings: tf.Tensor,
-           candidate_embeddings: tf.Tensor,
-           sample_weight: Optional[tf.Tensor] = None,
-           candidate_sampling_probability: Optional[tf.Tensor] = None,
-           candidate_ids: Optional[tf.Tensor] = None,
-           compute_metrics: bool = True,
-           compute_batch_metrics: bool = True) -> tf.Tensor:
+  def call(
+      self,
+      query_embeddings: tf.Tensor,
+      candidate_embeddings: tf.Tensor,
+      sample_weight: Optional[tf.Tensor] = None,
+      candidate_sampling_probability: Optional[tf.Tensor] = None,
+      candidate_ids: Optional[tf.Tensor] = None,
+      compute_metrics: bool = True,
+      compute_batch_metrics: bool = True,
+      score_mask: Optional[tf.Tensor] = None,
+  ) -> tf.Tensor:
     """Computes the task loss and metrics.
 
     The main argument are pairs of query and candidate embeddings: the first row
@@ -149,10 +154,14 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
         reflect the sampling probability of negative candidates.
       candidate_ids: Optional tensor containing candidate ids. When given,
         factorized top-K evaluation will be id-based rather than score-based.
-      compute_metrics: Whether to compute metrics. Set this to False
-        during training for faster training.
-      compute_batch_metrics: Whether to compute batch level metrics.
-        In-batch loss_metrics will still be computed.
+      compute_metrics: Whether to compute metrics. Set this to False during
+        training for faster training.
+      compute_batch_metrics: Whether to compute batch level metrics. In-batch
+        loss_metrics will still be computed.
+      score_mask: [num_queries, num_candidates] boolean tensor indicating for
+        each query, which candidates should be considered for loss and
+        metrics computation (false means the candidate is not considered).
+
     Returns:
       loss: Tensor of loss values.
     """
@@ -180,6 +189,9 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
         )
       scores = layers.loss.RemoveAccidentalHits()(labels, scores, candidate_ids)
 
+    if score_mask is not None:
+      scores = tf.where(score_mask, scores, MIN_FLOAT)
+
     if self._num_hard_negatives is not None:
       scores, labels = layers.loss.HardNegativeMining(self._num_hard_negatives)(
           scores,
@@ -189,8 +201,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     update_ops = []
     for metric in self._loss_metrics:
-      update_ops.append(
-          metric.update_state(loss, sample_weight=sample_weight))
+      update_ops.append(metric.update_state(loss))
 
     if compute_metrics:
       for metric in self._factorized_metrics:

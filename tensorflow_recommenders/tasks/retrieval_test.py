@@ -37,13 +37,20 @@ class RetrievalTest(tf.test.TestCase):
 
     task = retrieval.Retrieval(
         metrics=metrics.FactorizedTopK(
-            candidates=candidate_dataset.batch(16),
-            ks=[5]
+            candidates=candidate_dataset.batch(16), ks=[5]
         ),
         batch_metrics=[
             tf.keras.metrics.TopKCategoricalAccuracy(
-                k=1, name="batch_categorical_accuracy_at_1")
-        ])
+                k=1, name="batch_categorical_accuracy_at_1"
+            )
+        ],
+        loss_metrics=[
+            tf.keras.metrics.Mean(
+                name="batch_loss",
+                dtype=tf.float32,
+            )
+        ],
+    )
 
     # All_pair_scores: [[6, 3], [9, 5]].
     # Normalized logits: [[3, 0], [4, 0]].
@@ -52,6 +59,7 @@ class RetrievalTest(tf.test.TestCase):
     expected_metrics = {
         "factorized_top_k/top_5_categorical_accuracy": 1.0,
         "batch_categorical_accuracy_at_1": 0.5,
+        "batch_loss": expected_loss,
     }
     loss = task(query_embeddings=query, candidate_embeddings=candidate)
     metrics_ = {
@@ -70,7 +78,8 @@ class RetrievalTest(tf.test.TestCase):
                 compute_metrics=False)
     expected_metrics1 = {
         "factorized_top_k/top_5_categorical_accuracy": 0.0,
-        "batch_categorical_accuracy_at_1": 0.5
+        "batch_categorical_accuracy_at_1": 0.5,
+        "batch_loss": loss,
     }
     metrics1_ = {
         metric.name: metric.result().numpy() for metric in task.metrics
@@ -89,7 +98,8 @@ class RetrievalTest(tf.test.TestCase):
         compute_batch_metrics=False)
     expected_metrics2 = {
         "factorized_top_k/top_5_categorical_accuracy": 1.0,
-        "batch_categorical_accuracy_at_1": 0.0
+        "batch_categorical_accuracy_at_1": 0.0,
+        "batch_loss": loss,
     }
     metrics2_ = {
         metric.name: metric.result().numpy() for metric in task.metrics
@@ -98,6 +108,33 @@ class RetrievalTest(tf.test.TestCase):
     self.assertIsNotNone(loss)
     self.assertAllClose(expected_loss, loss)
     self.assertAllClose(expected_metrics2, metrics2_)
+
+    # Test computation of metrics with sample_weight
+    for metric in task.metrics:
+      metric.reset_states()
+    loss = task(
+        query_embeddings=query,
+        candidate_embeddings=candidate,
+        sample_weight=tf.constant([0.7, 0.3], dtype=tf.float32),
+    )
+
+    # All_pair_scores: [[6, 3], [9, 5]].
+    # Normalized logits: [[3, 0], [4, 0]].
+    expected_loss3 = -0.7 * np.log(_sigmoid(3.0)) - 0.3 * np.log(
+        1 - _sigmoid(4.0)
+    )
+
+    expected_metrics3 = {
+        "factorized_top_k/top_5_categorical_accuracy": 1.0,
+        "batch_categorical_accuracy_at_1": 0.7,
+        "batch_loss": expected_loss3,
+    }
+    metrics3_ = {
+        metric.name: metric.result().numpy() for metric in task.metrics
+    }
+    self.assertIsNotNone(loss)
+    self.assertAllClose(expected_loss3, loss)
+    self.assertAllClose(expected_metrics3, metrics3_)
 
   def test_task_graph(self):
 

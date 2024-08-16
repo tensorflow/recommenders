@@ -373,7 +373,7 @@ class Streaming(TopK):
     self._num_parallel_calls = num_parallel_calls
     self._sorted = sorted_order
 
-    self._counter = self.add_weight("counter", dtype=tf.int32, trainable=False)
+    self._counter = self.add_weight(name="counter", dtype=tf.int32, trainable=False)
 
   def index_from_dataset(
       self,

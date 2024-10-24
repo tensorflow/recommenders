@@ -250,5 +250,53 @@ class RetrievalTestWithNegativeSamples(tf.test.TestCase):
     self.assertAllClose(expected_metrics2, metrics2_)
 
 
+class RetrievalTestWithMultipointQueries(tf.test.TestCase):
+
+  def test_task(self):
+
+    query = tf.constant(
+        [[[3, 2, 1], [1, 2, 3]], [[2, 3, 4], [4, 3, 2]]], dtype=tf.float32
+    )
+    candidate = tf.constant([[0, 1, 0], [0, 1, 1], [1, 1, 0]], dtype=tf.float32)
+    candidate_dataset = tf.data.Dataset.from_tensor_slices(
+        np.array([[0, 0, 0]] * 20, dtype=np.float32)
+    )
+
+    task = retrieval.Retrieval(
+        metrics=metrics.FactorizedTopK(
+            candidates=candidate_dataset.batch(16), ks=[5]
+        ),
+        batch_metrics=[
+            tf.keras.metrics.TopKCategoricalAccuracy(
+                k=1, name="batch_categorical_accuracy_at_1"
+            )
+        ],
+    )
+
+    # Scores will have shape [num_queries, num_candidates]
+    # All_pair_scores:   [[[2,2], [3,5], [5,3]], [[3, 3], [7,5], [5,7]]].
+    # Max-sim scores:    [[2, 5, 5], [3, 7, 7]].
+    # Normalized logits: [[0, 3, 3], [1, 5, 5]].
+    expected_loss = -np.log(1 / (1 + np.exp(3) + np.exp(3))) - np.log(
+        np.exp(5) / (np.exp(1) + np.exp(5) + np.exp(5))
+    )
+
+    expected_metrics = {
+        "factorized_top_k/top_5_categorical_accuracy": (
+            0.0
+        ),  # not computed for multipoint queries
+        "batch_categorical_accuracy_at_1": 0.5,
+    }
+    loss = task(
+        query_embeddings=query,
+        candidate_embeddings=candidate,
+    )
+    metrics_ = {metric.name: metric.result().numpy() for metric in task.metrics}
+
+    self.assertIsNotNone(loss)
+    self.assertAllClose(expected_loss, loss)
+    self.assertAllClose(expected_metrics, metrics_)
+
+
 if __name__ == "__main__":
   tf.test.main()

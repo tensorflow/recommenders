@@ -141,7 +141,10 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
 
     Args:
       query_embeddings: [num_queries, embedding_dim] tensor of query
-        representations.
+        representations, or [num_queries, num_heads, embedding_dim]. If latter,
+        we do "maxsim" scoring over those multiple query heads. This applies to
+        the loss computation and batch metrics. Factorized metrics won't be
+        computed in this case.
       candidate_embeddings: [num_candidates, embedding_dim] tensor of candidate
         representations. Normally, `num_candidates` is the same as
         `num_queries`: there is a positive candidate corresponding for every
@@ -166,8 +169,15 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       loss: Tensor of loss values.
     """
 
-    scores = tf.linalg.matmul(
-        query_embeddings, candidate_embeddings, transpose_b=True)
+    if len(tf.shape(query_embeddings)) == 3:
+      scores = tf.einsum(
+          "qne,ce->qnc", query_embeddings, candidate_embeddings
+      )
+      scores = tf.math.reduce_max(scores, axis=1)
+    else:
+      scores = tf.linalg.matmul(
+          query_embeddings, candidate_embeddings, transpose_b=True
+      )
 
     num_queries = tf.shape(scores)[0]
     num_candidates = tf.shape(scores)[1]
@@ -203,7 +213,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
     for metric in self._loss_metrics:
       update_ops.append(metric.update_state(loss))
 
-    if compute_metrics:
+    if compute_metrics and len(tf.shape(query_embeddings)) == 2:
       for metric in self._factorized_metrics:
         update_ops.append(
             metric.update_state(

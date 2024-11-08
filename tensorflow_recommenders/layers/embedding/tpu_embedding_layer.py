@@ -15,8 +15,23 @@
 """Keras interface for TPU Embeddings in TF2."""
 
 from typing import Any, Dict, Iterable, Optional, Union
-
 import tensorflow.compat.v2 as tf
+
+
+# From tensorflow/python/layers/sparse_core_util.py to avoid circular dependency
+# and avoid creating another separate file.
+def has_sparse_core() -> bool:
+  """Check to see if SparseCore is available."""
+  strategy = tf.distribute.get_strategy()
+  if not isinstance(
+      strategy,
+      (tf.distribute.TPUStrategy, tf.distribute.experimental.TPUStrategy),
+  ):
+    return False
+  return (
+      strategy.extended.tpu_hardware_feature.embedding_feature
+      == tf.tpu.experimental.HardwareFeature.EmbeddingFeature.V2
+  )
 
 _SLOT_NAME_MAPPING = {
     # Slot names in Keras optimizer v2 are different compared to the slot names
@@ -621,7 +636,7 @@ class TPUEmbedding(tf.keras.layers.Layer):
         will be one step old with potential correctness drawbacks). Set to True
         for improved performance.
       batch_size: Batch size of the input feature. Deprecated, support backward
-        compatibility.
+        compatibility. Set None for sparse core for proper shape inference.
       embedding_feature: EmbeddingFeature enum, inidicating which version of TPU
         hardware the layer should run on.
       sparse_core_embedding_config: SparseCoreEmbeddingConfig, inidicating
@@ -665,7 +680,7 @@ class TPUEmbedding(tf.keras.layers.Layer):
         pipeline_execution_with_tensor_core,
         sparse_core_embedding_config
     )
-    self.batch_size = batch_size
+    self.batch_size = None if has_sparse_core() else batch_size
     self._tpu_call_id = 0
 
   def _create_tpu_embedding_mid_level_api(

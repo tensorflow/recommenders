@@ -180,9 +180,8 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
       )
 
     num_queries = tf.shape(scores)[0]
-    num_candidates = tf.shape(scores)[1]
 
-    labels = tf.eye(num_queries, num_candidates)
+    labels = tf.eye(num_queries)
 
     if self._temperature is not None:
       scores = scores / self._temperature

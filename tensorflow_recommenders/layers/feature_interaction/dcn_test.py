@@ -50,7 +50,7 @@ class CrossTest(tf.test.TestCase):
     self.assertAllClose(np.asarray([[0.16, 0.32, 0.48]]), output)
 
   def test_unsupported_input_dim(self):
-    with self.assertRaisesRegexp(ValueError,
+    with self.assertRaisesRegex(ValueError,
                                  r"dimension mismatch"):
       x0 = np.random.random((12, 5))
       x = np.random.random((12, 7))
@@ -58,7 +58,7 @@ class CrossTest(tf.test.TestCase):
       layer(x0, x)
 
   def test_invalid_diag_scale(self):
-    with self.assertRaisesRegexp(ValueError,
+    with self.assertRaisesRegex(ValueError,
                                  r"`diag_scale` should be non-negative"):
       x0 = np.asarray([[0.1, 0.2, 0.3]]).astype(np.float32)
       x = np.asarray([[0.4, 0.5, 0.6]]).astype(np.float32)

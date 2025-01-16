@@ -64,7 +64,7 @@ class DotInteractionTest(tf.test.TestCase):
                                      f13, f23, 0]]), output)
 
   def test_non_matching_dimensions(self):
-    with self.assertRaisesRegexp(ValueError, r"dimensions must be equal"):
+    with self.assertRaisesRegex(ValueError, r"dimensions must be equal"):
       feature1 = np.asarray([[0.1, 0.2, 0.3]]).astype(np.float32)
       feature2 = np.asarray([[2.0, -1.0, 1.0]]).astype(np.float32)
       feature3 = np.asarray([[0.0, 1.0]]).astype(np.float32)

@@ -21,6 +21,7 @@ import tensorflow as tf
 
 MAX_FLOAT = np.finfo(np.float32).max / 100.0
 MIN_FLOAT = np.finfo(np.float32).min / 100.0
+EPS_FLOAT = np.finfo(np.float32).eps / 100.0
 
 
 def _gather_elements_along_row(data: tf.Tensor,
@@ -155,4 +156,4 @@ class SamplingProbablityCorrection(tf.keras.layers.Layer):
     """Corrects the input logits to account for candidate sampling probability."""
 
     return logits - tf.math.log(
-        tf.clip_by_value(candidate_sampling_probability, 1e-6, 1.))
+        tf.clip_by_value(candidate_sampling_probability, EPS_FLOAT, 1.))

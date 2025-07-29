@@ -1,4 +1,4 @@
-# Copyright 2024 The TensorFlow Recommenders Authors.
+# Copyright 2025 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -917,6 +917,25 @@ class TPUEmbedding(tf.keras.layers.Layer):
       return self._tpu_embedding_lookup(features, weights)
     else:
       return self._tpu_embedding(features, weights)
+
+  def update_embedding_table(
+      self,
+      table: tf.tpu.experimental.embedding.TableConfig,
+      embedding_table: tf.Variable,
+  ) -> None:
+    """Update the embedding tables."""
+    if table in self.embedding_tables:
+      if self._embedding_feature == _EMBEDDING_V2:
+        self._tpu_embedding.variables[table.name][
+            "parameters"
+        ] = embedding_table
+      else:
+        for old_config, new_config in self._table_config_map:
+          if old_config.name == table.name:
+            self._tpu_embedding.variables[new_config.name]["parameters"] = (
+                embedding_table
+            )
+            break
 
   @property
   def embedding_tables(

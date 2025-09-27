@@ -1,3 +1,2 @@
-tensorflow >= 2.9.0; sys_platform != 'darwin'
-tensorflow-macos >= 2.9.0; sys_platform == 'darwin'
+tensorflow >= 2.9.0
 absl-py >= 0.1.6

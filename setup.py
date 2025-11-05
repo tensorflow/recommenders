@@ -17,16 +17,18 @@
 import pathlib
 import setuptools
 
-VERSION = "0.7.3"
+VERSION = "0.7.4"
 
-long_description = (pathlib.Path(__file__).parent
-                    .joinpath("README.md")
-                    .read_text())
+long_description = (
+    pathlib.Path(__file__).parent.joinpath("README.md").read_text()
+)
 
 setuptools.setup(
     name="tensorflow-recommenders",
     version=VERSION,
-    description="Tensorflow Recommenders, a TensorFlow library for recommender systems.",
+    description=(
+        "Tensorflow Recommenders, a TensorFlow library for recommender systems."
+    ),
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/tensorflow/recommenders",

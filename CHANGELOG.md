@@ -2,6 +2,12 @@
 
 ## [unreleased][unreleased]
 
+## [0.7.4][2025-11-04]
+
+### Added
+
+-   Add `tfrs.layers.feature_multiplexing.UnifiedEmbedding` and tutorial.
+
 ## [0.7.3][2023-02-02]
 
 ### Changed

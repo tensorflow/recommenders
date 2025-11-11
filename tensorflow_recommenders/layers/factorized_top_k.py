@@ -25,6 +25,7 @@ import tensorflow as tf
 try:
   # ScaNN is an optional dependency, and might not be present.
   from scann import scann_ops
+
   _HAVE_SCANN = True
 except ImportError:
   _HAVE_SCANN = False
@@ -39,14 +40,16 @@ def _wrap_batch_too_small_error(k: int):
   except tf.errors.InvalidArgumentError as e:
     error_message = str(e)
     if "input must have at least k columns" in error_message:
-      raise ValueError("Tried to retrieve k={k} top items, but the candidate "
-                       "dataset batch size is too small. This may be because "
-                       "your candidate batch size is too small or the last "
-                       "batch of your dataset is too small. "
-                       "To resolve this, increase your batch size, set the "
-                       "drop_remainder argument to True when batching your "
-                       "candidates, or set the handle_incomplete_batches "
-                       "argument to True in the constructor. ".format(k=k))
+      raise ValueError(
+          "Tried to retrieve k={k} top items, but the candidate "
+          "dataset batch size is too small. This may be because "
+          "your candidate batch size is too small or the last "
+          "batch of your dataset is too small. "
+          "To resolve this, increase your batch size, set the "
+          "drop_remainder argument to True when batching your "
+          "candidates, or set the handle_incomplete_batches "
+          "argument to True in the constructor. ".format(k=k)
+      ) from e
     else:
       raise
 
@@ -68,16 +71,18 @@ def _take_along_axis(arr: tf.Tensor, indices: tf.Tensor) -> tf.Tensor:
 
   row_indices = tf.tile(
       tf.expand_dims(tf.range(tf.shape(indices)[0]), 1),
-      [1, tf.shape(indices)[1]])
+      [1, tf.shape(indices)[1]],
+  )
   gather_indices = tf.concat(
-      [tf.reshape(row_indices, (-1, 1)),
-       tf.reshape(indices, (-1, 1))], axis=1)
+      [tf.reshape(row_indices, (-1, 1)), tf.reshape(indices, (-1, 1))], axis=1
+  )
 
   return tf.reshape(tf.gather_nd(arr, gather_indices), tf.shape(indices))
 
 
-def _exclude(scores: tf.Tensor, identifiers: tf.Tensor, exclude: tf.Tensor,
-             k: int) -> Tuple[tf.Tensor, tf.Tensor]:
+def _exclude(
+    scores: tf.Tensor, identifiers: tf.Tensor, exclude: tf.Tensor, k: int
+) -> Tuple[tf.Tensor, tf.Tensor]:
   """Removes a subset of candidates from top K candidates.
 
   For each row of inputs excludes those candidates whose identifiers match
@@ -99,14 +104,15 @@ def _exclude(scores: tf.Tensor, identifiers: tf.Tensor, exclude: tf.Tensor,
   isin = tf.math.reduce_any(tf.math.equal(idents, exclude), -1)
 
   # Set the scores of the excluded candidates to a very low value.
-  adjusted_scores = (scores - tf.cast(isin, tf.float32) * 1.0e5)
+  adjusted_scores = scores - tf.cast(isin, tf.float32) * 1.0e5
 
   k = tf.math.minimum(k, tf.shape(scores)[1])
 
   _, indices = tf.math.top_k(adjusted_scores, k=k)
 
-  return _take_along_axis(scores,
-                          indices), _take_along_axis(identifiers, indices)
+  return _take_along_axis(scores, indices), _take_along_axis(
+      identifiers, indices
+  )
 
 
 def _check_candidates_with_identifiers(candidates: tf.data.Dataset) -> None:
@@ -150,30 +156,7 @@ class TopK(tf.keras.Model, abc.ABC):
 
   @abc.abstractmethod
   def index(
-      self,
-      candidates: tf.Tensor,
-      identifiers: Optional[tf.Tensor] = None) -> "TopK":
-    """Builds the retrieval index.
-
-    When called multiple times the existing index will be dropped and a new one
-    created.
-
-    Args:
-      candidates: Matrix of candidate embeddings.
-      identifiers: Optional tensor of candidate identifiers. If
-        given, these will be used as identifiers of top candidates returned
-        when performing searches. If not given, indices into the candidates
-        tensor will be returned instead.
-
-    Returns:
-      Self.
-    """
-
-    raise NotImplementedError()
-
-  def index_from_dataset(
-      self,
-      candidates: tf.data.Dataset
+      self, candidates: tf.Tensor, identifiers: Optional[tf.Tensor] = None
   ) -> "TopK":
     """Builds the retrieval index.
 
@@ -181,11 +164,30 @@ class TopK(tf.keras.Model, abc.ABC):
     created.
 
     Args:
+      candidates: Matrix of candidate embeddings.
+      identifiers: Optional tensor of candidate identifiers. If given, these
+        will be used as identifiers of top candidates returned when performing
+        searches. If not given, indices into the candidates tensor will be
+        returned instead.
+
+    Returns:
+      Self.
+    """
+
+    raise NotImplementedError()
+
+  def index_from_dataset(self, candidates: tf.data.Dataset) -> "TopK":
+    """Builds the retrieval index.
+
+    When called multiple times the existing index will be dropped and a new one
+    created.
+
+    Args:
       candidates: Dataset of candidate embeddings or (candidate identifier,
-        candidate embedding) pairs. If the dataset returns tuples,
-        the identifiers will be used as identifiers of top candidates
-        returned when performing searches. If not given, indices into the
-        candidates dataset will be given instead.
+        candidate embedding) pairs. If the dataset returns tuples, the
+        identifiers will be used as identifiers of top candidates returned when
+        performing searches. If not given, indices into the candidates dataset
+        will be given instead.
 
     Returns:
       Self.
@@ -201,12 +203,10 @@ class TopK(tf.keras.Model, abc.ABC):
     if isinstance(spec, tuple):
       identifiers_and_candidates = list(candidates)
       candidates = tf.concat(
-          [embeddings for _, embeddings in identifiers_and_candidates],
-          axis=0
+          [embeddings for _, embeddings in identifiers_and_candidates], axis=0
       )
       identifiers = tf.concat(
-          [identifiers for identifiers, _ in identifiers_and_candidates],
-          axis=0
+          [identifiers for identifiers, _ in identifiers_and_candidates], axis=0
       )
     else:
       candidates = tf.concat(list(candidates), axis=0)
@@ -314,10 +314,12 @@ class TopK(tf.keras.Model, abc.ABC):
 
     if hasattr(self.query_with_exclusions, "python_function"):
       self.query_with_exclusions = tf.function(
-          self.query_with_exclusions.python_function)
+          self.query_with_exclusions.python_function
+      )
 
-  def _compute_score(self, queries: tf.Tensor,
-                     candidates: tf.Tensor) -> tf.Tensor:
+  def _compute_score(
+      self, queries: tf.Tensor, candidates: tf.Tensor
+  ) -> tf.Tensor:
     """Computes the standard dot product score from queries and candidates.
 
     Args:
@@ -338,12 +340,14 @@ class Streaming(TopK):
   along with the top scoring candidates' identifiers.
   """
 
-  def __init__(self,
-               query_model: Optional[tf.keras.Model] = None,
-               k: int = 10,
-               handle_incomplete_batches: bool = True,
-               num_parallel_calls: int = tf.data.AUTOTUNE,
-               sorted_order: bool = True) -> None:
+  def __init__(
+      self,
+      query_model: Optional[tf.keras.Model] = None,
+      k: int = 10,
+      handle_incomplete_batches: bool = True,
+      num_parallel_calls: int = tf.data.AUTOTUNE,
+      sorted_order: bool = True,
+  ) -> None:
     """Initializes the layer.
 
     Args:
@@ -377,10 +381,7 @@ class Streaming(TopK):
         name="counter", dtype=tf.int32, trainable=False
     )
 
-  def index_from_dataset(
-      self,
-      candidates: tf.data.Dataset
-  ) -> "TopK":
+  def index_from_dataset(self, candidates: tf.data.Dataset) -> "TopK":
 
     _check_candidates_with_identifiers(candidates)
 
@@ -391,7 +392,8 @@ class Streaming(TopK):
   def index(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
       self,
       candidates: tf.data.Dataset,
-      identifiers: Optional[tf.data.Dataset] = None) -> "Streaming":
+      identifiers: Optional[tf.data.Dataset] = None,
+  ) -> "Streaming":
     """Not implemented. Please call `index_from_dataset` instead."""
 
     raise NotImplementedError(
@@ -408,8 +410,10 @@ class Streaming(TopK):
     k = k if k is not None else self._k
 
     if self._candidates is None:
-      raise ValueError("The `index` method must be called first to "
-                       "create the retrieval index.")
+      raise ValueError(
+          "The `index` method must be called first to "
+          "create the retrieval index."
+      )
 
     if self.query_model is not None:
       queries = self.query_model(queries)
@@ -417,8 +421,9 @@ class Streaming(TopK):
     # Reset the element counter.
     self._counter.assign(0)
 
-    def top_scores(candidate_index: tf.Tensor,
-                   candidate_batch: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
+    def top_scores(
+        candidate_index: tf.Tensor, candidate_batch: tf.Tensor
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
       """Computes top scores and indices for a batch of candidates."""
 
       scores = self._compute_score(queries, candidate_batch)
@@ -432,8 +437,9 @@ class Streaming(TopK):
 
       return scores, tf.gather(candidate_index, indices)
 
-    def top_k(state: Tuple[tf.Tensor, tf.Tensor],
-              x: Tuple[tf.Tensor, tf.Tensor]) -> Tuple[tf.Tensor, tf.Tensor]:
+    def top_k(
+        state: Tuple[tf.Tensor, tf.Tensor], x: Tuple[tf.Tensor, tf.Tensor]
+    ) -> Tuple[tf.Tensor, tf.Tensor]:
       """Reduction function.
 
       Returns top K scores from a combination of existing top K scores and new
@@ -482,8 +488,10 @@ class Streaming(TopK):
       index_dtype = self._candidates.element_spec[0].dtype
 
     # Initialize the state with dummy scores and candidate indices.
-    initial_state = (tf.zeros((tf.shape(queries)[0], 0), dtype=tf.float32),
-                     tf.zeros((tf.shape(queries)[0], 0), dtype=index_dtype))
+    initial_state = (
+        tf.zeros((tf.shape(queries)[0], 0), dtype=tf.float32),
+        tf.zeros((tf.shape(queries)[0], 0), dtype=index_dtype),
+    )
 
     with _wrap_batch_too_small_error(k):
       results = (
@@ -495,7 +503,8 @@ class Streaming(TopK):
           .map(top_scores, num_parallel_calls=self._num_parallel_calls)
           # Reduce into a single tuple of output tensors by keeping a running
           # tally of top k scores and indices.
-          .reduce(initial_state, top_k))
+          .reduce(initial_state, top_k)
+      )
 
     return results
 
@@ -506,10 +515,12 @@ class Streaming(TopK):
 class BruteForce(TopK):
   """Brute force retrieval."""
 
-  def __init__(self,
-               query_model: Optional[tf.keras.Model] = None,
-               k: int = 10,
-               name: Optional[Text] = None):
+  def __init__(
+      self,
+      query_model: Optional[tf.keras.Model] = None,
+      k: int = 10,
+      name: Optional[Text] = None,
+  ):
     """Initializes the layer.
 
     Args:
@@ -527,9 +538,7 @@ class BruteForce(TopK):
     self._candidates = None
 
   def index(
-      self,
-      candidates: tf.Tensor,
-      identifiers: Optional[tf.Tensor] = None
+      self, candidates: tf.Tensor, identifiers: Optional[tf.Tensor] = None
   ) -> "BruteForce":
 
     if identifiers is None:
@@ -537,13 +546,14 @@ class BruteForce(TopK):
 
     if tf.rank(candidates) != 2:
       raise ValueError(
-          f"The candidates tensor must be 2D (got {candidates.shape}).")
+          f"The candidates tensor must be 2D (got {candidates.shape})."
+      )
 
     if candidates.shape[0] != identifiers.shape[0]:
       raise ValueError(
-          "The candidates and identifiers tensors must have the same number of rows "
-          f"(got {candidates.shape[0]} candidates rows and {identifiers.shape[0]} "
-          "identifier rows). "
+          "The candidates and identifiers tensors must have the same number of"
+          f" rows (got {candidates.shape[0]} candidates rows and"
+          f" {identifiers.shape[0]} identifier rows). "
       )
 
     # We need any value that has the correct dtype.
@@ -554,14 +564,17 @@ class BruteForce(TopK):
         dtype=identifiers.dtype,
         shape=identifiers.shape,
         initializer=tf.keras.initializers.Constant(
-            value=identifiers_initial_value),
-        trainable=False)
+            value=identifiers_initial_value
+        ),
+        trainable=False,
+    )
     self._candidates = self.add_weight(
         name="candidates",
         dtype=candidates.dtype,
         shape=candidates.shape,
         initializer=tf.keras.initializers.Zeros(),
-        trainable=False)
+        trainable=False,
+    )
 
     self._identifiers.assign(identifiers)
     self._candidates.assign(candidates)
@@ -579,8 +592,10 @@ class BruteForce(TopK):
     k = k if k is not None else self._k
 
     if self._candidates is None:
-      raise ValueError("The `index` method must be called first to "
-                       "create the retrieval index.")
+      raise ValueError(
+          "The `index` method must be called first to "
+          "create the retrieval index."
+      )
 
     if self.query_model is not None:
       queries = self.query_model(queries)
@@ -613,17 +628,19 @@ class ScaNN(TopK):
   [Dockerfile](https://github.com/google-research/google-research/tree/master/scann/tf_serving).
   """
 
-  def __init__(self,
-               query_model: Optional[tf.keras.Model] = None,
-               k: int = 10,
-               distance_measure: Text = "dot_product",
-               num_leaves: int = 100,
-               num_leaves_to_search: int = 10,
-               training_iterations: int = 12,
-               dimensions_per_block: int = 2,
-               num_reordering_candidates: Optional[int] = None,
-               parallelize_batch_searches: bool = True,
-               name: Optional[Text] = None):
+  def __init__(
+      self,
+      query_model: Optional[tf.keras.Model] = None,
+      k: int = 10,
+      distance_measure: Text = "dot_product",
+      num_leaves: int = 100,
+      num_leaves_to_search: int = 10,
+      training_iterations: int = 12,
+      dimensions_per_block: int = 2,
+      num_reordering_candidates: Optional[int] = None,
+      parallelize_batch_searches: bool = True,
+      name: Optional[Text] = None,
+  ):
     """Initializes the layer.
 
     Args:
@@ -658,7 +675,8 @@ class ScaNN(TopK):
     if not _HAVE_SCANN:
       raise ImportError(
           "The scann library is not present. Please install it using "
-          "`pip install scann` to use the ScaNN layer.")
+          "`pip install scann` to use the ScaNN layer."
+      )
 
     self.query_model = query_model
     self._k = k
@@ -671,7 +689,8 @@ class ScaNN(TopK):
       builder = scann_ops.builder(
           db=candidates,
           num_neighbors=self._k,
-          distance_measure=distance_measure)
+          distance_measure=distance_measure,
+      )
 
       builder = builder.tree(
           num_leaves=num_leaves,
@@ -691,23 +710,24 @@ class ScaNN(TopK):
     self._serialized_searcher = None
 
   def index(
-      self,
-      candidates: tf.Tensor,
-      identifiers: Optional[tf.Tensor] = None) -> "ScaNN":
+      self, candidates: tf.Tensor, identifiers: Optional[tf.Tensor] = None
+  ) -> "ScaNN":
 
     if len(candidates.shape) != 2:
       raise ValueError(
-          f"The candidates tensor must be 2D (got {candidates.shape}).")
+          f"The candidates tensor must be 2D (got {candidates.shape})."
+      )
 
     if identifiers is not None and candidates.shape[0] != identifiers.shape[0]:
       raise ValueError(
-          "The candidates and identifiers tensors must have the same number of rows "
-          f"(got {candidates.shape[0]} candidates rows and {identifiers.shape[0]} "
-          "identifier rows). "
+          "The candidates and identifiers tensors must have the same number of"
+          f" rows (got {candidates.shape[0]} candidates rows and"
+          f" {identifiers.shape[0]} identifier rows). "
       )
 
     self._serialized_searcher = self._build_searcher(
-        candidates).serialize_to_module()
+        candidates
+    ).serialize_to_module()
 
     if identifiers is not None:
       # We need any value that has the correct dtype.
@@ -717,23 +737,29 @@ class ScaNN(TopK):
           dtype=identifiers.dtype,
           shape=identifiers.shape,
           initializer=tf.keras.initializers.Constant(
-              value=identifiers_initial_value),
-          trainable=False)
+              value=identifiers_initial_value
+          ),
+          trainable=False,
+      )
       self._identifiers.assign(identifiers)
 
     self._reset_tf_function_cache()
 
     return self
 
-  def call(self,
-           queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
-           k: Optional[int] = None) -> Tuple[tf.Tensor, tf.Tensor]:
+  def call(
+      self,
+      queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
+      k: Optional[int] = None,
+  ) -> Tuple[tf.Tensor, tf.Tensor]:
 
     k = k if k is not None else self._k
 
     if self._serialized_searcher is None:
-      raise ValueError("The `index` method must be called first to "
-                       "create the retrieval index.")
+      raise ValueError(
+          "The `index` method must be called first to "
+          "create the retrieval index."
+      )
 
     searcher = scann_ops.searcher_from_module(self._serialized_searcher)
 
@@ -746,7 +772,8 @@ class ScaNN(TopK):
     if len(queries.shape) == 2:
       if self._parallelize_batch_searches:
         result = searcher.search_batched_parallel(
-            queries, final_num_neighbors=k)
+            queries, final_num_neighbors=k
+        )
       else:
         result = searcher.search_batched(queries, final_num_neighbors=k)
       indices = result.indices
@@ -757,7 +784,8 @@ class ScaNN(TopK):
       distances = result.distance
     else:
       raise ValueError(
-          f"Queries must be of rank 2 or 1, got {len(queries.shape)}.")
+          f"Queries must be of rank 2 or 1, got {len(queries.shape)}."
+      )
 
     if self._identifiers is None:
       return distances, indices

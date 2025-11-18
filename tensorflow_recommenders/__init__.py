@@ -21,6 +21,31 @@ It's built on Keras and aims to have a gentle learning curve while still giving
 you the flexibility to build complex models.
 """
 
+
+# For clear error messaging, check at the earliest opportunity for a
+# compatible version of TF/Keras, before any import below fails obscurely.
+# pylint: disable=g-statement-before-imports,g-import-not-at-top
+def _check_keras_version():
+  import tensorflow as tf
+
+  keras_version_fn = getattr(tf.keras, "version", None)
+  if keras_version_fn:  # Not present in tf.keras for v2 / before TF 2.16.
+    keras_version = keras_version_fn()
+    if keras_version.startswith("3."):
+      raise ImportError(
+          "Package tensorflow_recommenders requires tf.keras to be Keras"
+          f" version 2 but got version {keras_version}. "
+          "For open-source TensorFlow 2.16 and above, "
+          "set the environment variable TF_USE_LEGACY_KERAS=1 to fix. "
+          "For more information, see for example "
+          "https://github.com/tensorflow/gnn/blob/main/tensorflow_gnn/docs/guide/keras_version.md"
+      )
+
+
+_check_keras_version()
+del _check_keras_version
+# pylint: enable=g-statement-before-imports
+
 __version__ = "v0.7.4"
 
 from tensorflow_recommenders import examples

@@ -7,8 +7,8 @@ set -e   # fail and exit on any command erroring
 : "${TF_VERSION:?}"
 : "${PY_VERSION:?}"
 
-# Import build functions.
-source ./tools/build_scripts/utils.sh
+# Use keras-2
+export TF_USE_LEGACY_KERAS=1
 
 which python3.10
 python3.10 --version

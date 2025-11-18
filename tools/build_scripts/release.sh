@@ -5,6 +5,9 @@ set -x
 
 TF_VERSION="2.9.0"
 
+# Use keras-2
+export TF_USE_LEGACY_KERAS=1
+
 GIT_COMMIT_ID=${1:-""}
 [[ -z $GIT_COMMIT_ID ]] && echo "Must provide a commit." && exit 1
 SETUP_ARGS=""
@@ -13,9 +16,6 @@ then
   echo "Nightly version building currently not implemented."
   exit 1
 fi
-
-# Import build functions.
-source ./tools/build_scripts/utils.sh
 
 which python3.10
 python3.10 --version

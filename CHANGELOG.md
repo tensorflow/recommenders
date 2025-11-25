@@ -2,6 +2,13 @@
 
 ## [unreleased][unreleased]
 
+## [0.7.5][2025-11-25]
+
+### Changed
+
+-   Updated release test script to use `export TF_USE_LEGACY_KERAS=1`. This is a
+    no-op for the TFRS library but should allow us to push new releases to PyPI.
+
 ## [0.7.4][2025-11-04]
 
 ### Added

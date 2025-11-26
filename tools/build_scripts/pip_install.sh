@@ -20,6 +20,7 @@ python3.10 -m pip install --upgrade pip
 # Install TensorFlow.
 echo "Installing TensorFlow..."
 python3.10 -m pip install tensorflow
+python3.10 -m pip install -q tf-keras
 python3.10 -m pip install -q urllib3
 
 # Install TensorFlow Recommenders.

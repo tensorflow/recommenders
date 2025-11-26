@@ -24,7 +24,7 @@ This is a public version of the library and hence does not include
 internal google stuff.
 """
 
-__version__ = "v0.7.5"
+__version__ = "v0.7.6"
 
 # This version does not include internal tfrs google library.
 from tensorflow_recommenders import examples

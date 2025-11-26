@@ -2,6 +2,12 @@
 
 ## [unreleased][unreleased]
 
+## [0.7.6][2025-11-26]
+
+### Changed
+
+-   Add `tf-keras` (Keras 2) to `requirements.txt` and `pip_install.sh`.
+
 ## [0.7.5][2025-11-25]
 
 ### Changed

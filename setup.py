@@ -24,7 +24,7 @@ long_description = (
 )
 
 setuptools.setup(
-    name="tensorflow-recommenders",
+    name="tensorflow_recommenders",
     version=VERSION,
     description=(
         "Tensorflow Recommenders, a TensorFlow library for recommender systems."

@@ -112,13 +112,10 @@ def _sample_list(
       size=num_examples_per_list,
       replace=False,
   )
-  sampled_movie_titles = [
-      feature_lists["movie_title"][idx] for idx in sampled_indices
-  ]
-  sampled_ratings = [
-      feature_lists["user_rating"][idx]
-      for idx in sampled_indices
-  ]
+  
+  sampled_movie_titles = feature_lists["movie_title"][sampled_indices].tolist()
+  
+  sampled_ratings = feature_lists["user_rating"][sampled_indices].tolist()
 
   return (
       tf.stack(sampled_movie_titles, 0),
@@ -174,6 +171,8 @@ def sample_listwise(
   tensor_slices = {"user_id": [], "movie_title": [], "user_rating": []}
 
   for user_id, feature_lists in example_lists_by_user.items():
+    feature_lists["movie_title"] = np.array(feature_lists["movie_title"])
+    feature_lists["user_rating"] = np.array(feature_lists["user_rating"])
     for _ in range(num_list_per_user):
 
       # Drop the user if they don't have enough ratings.

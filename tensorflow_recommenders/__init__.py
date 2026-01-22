@@ -46,7 +46,7 @@ _check_keras_version()
 del _check_keras_version
 # pylint: enable=g-statement-before-imports
 
-__version__ = "v0.7.6"
+__version__ = "v0.7.7"
 
 from tensorflow_recommenders import examples
 from tensorflow_recommenders import experimental

@@ -93,9 +93,9 @@ def evaluate(user_model: tf.keras.Model,
   }
 
 
-def _create_feature_dict() -> Dict[Text, List[tf.Tensor]]:
+def _create_feature_dict(features: List[Text]) -> Dict[Text, List[tf.Tensor]]:
   """Helper function for creating an empty feature dict for defaultdict."""
-  return {"movie_title": [], "user_rating": []}
+  return {key: [] for key in features}
 
 
 def _sample_list(
@@ -108,22 +108,20 @@ def _sample_list(
     random_state = np.random.RandomState()
 
   sampled_indices = random_state.choice(
-      range(len(feature_lists["movie_title"])),
+      range(len(feature_lists["user_rating"])),
       size=num_examples_per_list,
       replace=False,
   )
-  sampled_movie_titles = [
-      feature_lists["movie_title"][idx] for idx in sampled_indices
-  ]
-  sampled_ratings = [
-      feature_lists["user_rating"][idx]
-      for idx in sampled_indices
-  ]
+  sampled_features = {}
+  for name, values in feature_lists.items():
+    sampled_features[name] = [
+      values[idx] for idx in sampled_indices
+    ]
 
-  return (
-      tf.stack(sampled_movie_titles, 0),
-      tf.stack(sampled_ratings, 0),
-  )
+  return {
+    name: tf.stack(values, 0)
+    for name, values in sampled_features.items()
+  }
 
 
 def sample_listwise(
@@ -136,8 +134,8 @@ def sample_listwise(
 
   Args:
       rating_dataset:
-        The MovieLens ratings dataset loaded from TFDS with features
-        "movie_title", "user_id", and "user_rating".
+        The MovieLens ratings dataset loaded from TFDS. Feature must be  provided
+        in the dataset. The dataset must contain the "user_rating" feature.
       num_list_per_user:
         An integer representing the number of lists that should be sampled for
         each user in the training dataset.
@@ -150,28 +148,24 @@ def sample_listwise(
   Returns:
       A tf.data.Dataset containing list examples.
 
-      Each example contains three keys: "user_id", "movie_title", and
-      "user_rating". "user_id" maps to a string tensor that represents the user
-      id for the example. "movie_title" maps to a tensor of shape
-      [sum(num_example_per_list)] with dtype tf.string. It represents the list
-      of candidate movie ids. "user_rating" maps to a tensor of shape
-      [sum(num_example_per_list)] with dtype tf.float32. It represents the
-      rating of each movie in the candidate list.
+      Each example contains multiple keys. "user_id" maps to a string 
+      tensor that represents the user id for the example. "movie_title" maps 
+      to a tensor of shape [sum(num_example_per_list)] with dtype tf.string. 
+      It represents the list of candidate movie ids. "user_rating" maps to 
+      a tensor of shape [sum(num_example_per_list)] with dtype tf.float32. 
+      It represents the rating of each movie in the candidate list.
   """
   random_state = np.random.RandomState(seed)
 
-  example_lists_by_user = collections.defaultdict(_create_feature_dict)
+  features = rating_dataset.take(1).get_single_element().keys()
+  example_lists_by_user = collections.defaultdict(lambda: _create_feature_dict(features))
 
-  movie_title_vocab = set()
   for example in rating_dataset:
-    user_id = example["user_id"].numpy()
-    example_lists_by_user[user_id]["movie_title"].append(
-        example["movie_title"])
-    example_lists_by_user[user_id]["user_rating"].append(
-        example["user_rating"])
-    movie_title_vocab.add(example["movie_title"].numpy())
+    user_id = example.get('user_id').numpy()
+    for key, value in example.items():
+      example_lists_by_user[user_id][key].append(value.numpy())
 
-  tensor_slices = {"user_id": [], "movie_title": [], "user_rating": []}
+  tensor_slices = {key: [] for key in features}
 
   for user_id, feature_lists in example_lists_by_user.items():
     for _ in range(num_list_per_user):
@@ -180,13 +174,13 @@ def sample_listwise(
       if len(feature_lists["movie_title"]) < num_examples_per_list:
         continue
 
-      sampled_movie_titles, sampled_ratings = _sample_list(
-          feature_lists,
-          num_examples_per_list,
-          random_state=random_state,
+      sampled_features = _sample_list(
+        feature_lists,
+        num_examples_per_list,
+        random_state=random_state,
       )
-      tensor_slices["user_id"].append(user_id)
-      tensor_slices["movie_title"].append(sampled_movie_titles)
-      tensor_slices["user_rating"].append(sampled_ratings)
+
+      for feature, samples in sampled_features.items():
+        tensor_slices[feature].append(samples)
 
   return tf.data.Dataset.from_tensor_slices(tensor_slices)

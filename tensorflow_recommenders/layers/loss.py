@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -102,7 +102,7 @@ class HardNegativeMining(tf.keras.layers.Layer):
     # k + 1 logit values, including the highest k negative logits and one true
     # logit.
     _, col_indices = tf.nn.top_k(
-        logits + labels * MAX_FLOAT, k=num_sampled, sorted=False)
+        logits + labels * MAX_FLOAT, k=num_sampled, sorted=False)  # pyrefly: ignore[unsupported-operation]
 
     # Gather sampled logits and corresponding labels.
     logits = _gather_elements_along_row(logits, col_indices)

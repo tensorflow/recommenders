@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -215,7 +215,7 @@ class TopK(tf.keras.Model, abc.ABC):
     return self.index(candidates, identifiers)
 
   @abc.abstractmethod
-  def call(
+  def call(  # pyrefly: ignore[bad-override]
       self,
       queries: Union[tf.Tensor, Dict[Text, tf.Tensor]],
       k: Optional[int] = None,
@@ -284,7 +284,7 @@ class TopK(tf.keras.Model, abc.ABC):
     k = k if k is not None else self._k
 
     adjusted_k = k + exclusions.shape[1]
-    x, y = self(queries=queries, k=adjusted_k)
+    x, y = self(queries=queries, k=adjusted_k)  # pyrefly: ignore[not-callable]
     return _exclude(x, y, exclude=exclusions, k=k)
 
   @abc.abstractmethod
@@ -416,7 +416,7 @@ class Streaming(TopK):
       )
 
     if self.query_model is not None:
-      queries = self.query_model(queries)
+      queries = self.query_model(queries)  # pyrefly: ignore[not-callable]
 
     # Reset the element counter.
     self._counter.assign(0)
@@ -426,7 +426,7 @@ class Streaming(TopK):
     ) -> Tuple[tf.Tensor, tf.Tensor]:
       """Computes top scores and indices for a batch of candidates."""
 
-      scores = self._compute_score(queries, candidate_batch)
+      scores = self._compute_score(queries, candidate_batch)  # pyrefly: ignore[bad-argument-type]
 
       if self._handle_incomplete_batches:
         k_ = tf.math.minimum(k, tf.shape(scores)[1])
@@ -598,9 +598,9 @@ class BruteForce(TopK):
       )
 
     if self.query_model is not None:
-      queries = self.query_model(queries)
+      queries = self.query_model(queries)  # pyrefly: ignore[not-callable]
 
-    scores = self._compute_score(queries, self._candidates)
+    scores = self._compute_score(queries, self._candidates)  # pyrefly: ignore[bad-argument-type]
 
     values, indices = tf.math.top_k(scores, k=k)
 
@@ -764,7 +764,7 @@ class ScaNN(TopK):
     searcher = scann_ops.searcher_from_module(self._serialized_searcher)
 
     if self.query_model is not None:
-      queries = self.query_model(queries)
+      queries = self.query_model(queries)  # pyrefly: ignore[not-callable]
 
     if not isinstance(queries, tf.Tensor):
       raise ValueError(f"Queries must be a tensor, got {type(queries)}.")

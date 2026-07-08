@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -65,14 +65,14 @@ def evaluate(user_model: tf.keras.Model,
 
   movie_embeddings = np.concatenate(
       list(movies.batch(4096).map(
-          lambda x: movie_model({"movie_id": x["movie_id"]})
+          lambda x: movie_model({"movie_id": x["movie_id"]})  # pyrefly: ignore[not-callable]
       ).as_numpy_iterator()))
 
   precision_values = []
   recall_values = []
 
   for user_id, test_movies in test_user_to_movies.items():
-    user_embedding = user_model({"user_id": np.array([user_id])}).numpy()
+    user_embedding = user_model({"user_id": np.array([user_id])}).numpy()  # pyrefly: ignore[not-callable]
     scores = (user_embedding @ movie_embeddings.T).flatten()
 
     test_movies = np.frombuffer(test_movies, dtype=np.int32)
@@ -189,4 +189,4 @@ def sample_listwise(
       tensor_slices["movie_title"].append(sampled_movie_titles)
       tensor_slices["user_rating"].append(sampled_ratings)
 
-  return tf.data.Dataset.from_tensor_slices(tensor_slices)
+  return tf.data.Dataset.from_tensor_slices(tensor_slices)  # pyrefly: ignore[bad-argument-type]

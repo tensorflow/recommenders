@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ class Ranking(tf.keras.layers.Layer, base.Task):
       loss: Tensor of loss values.
     """
 
-    loss = self._loss(
+    loss = self._loss(  # pyrefly: ignore[not-callable]
         y_true=labels, y_pred=predictions, sample_weight=sample_weight)
 
     if not compute_metrics:

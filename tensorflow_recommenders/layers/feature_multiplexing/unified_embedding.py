@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -173,8 +173,8 @@ class UnifiedEmbedding(tf.keras.layers.Layer):
     # to rebuild the Hashing layers, and the serialized embed_layer. For the
     # other arguments to the initializer, we use empty "dummy" values.
     ue_config = UnifiedEmbeddingConfig(0, 0, 0, "")
-    ue_config.hashing_config = config.pop("hashing_config")
-    ue_config.hashing_config = {}
+    ue_config.hashing_config = config.pop("hashing_config")  # pyrefly: ignore[read-only]
+    ue_config.hashing_config = {}  # pyrefly: ignore[read-only]
     embed_layer = tf.keras.saving.deserialize_keras_object(
         config.pop("embed_layer"))
     config["config"] = ue_config

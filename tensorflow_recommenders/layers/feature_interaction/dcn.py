@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -174,14 +174,14 @@ class Cross(tf.keras.layers.Layer):
               x0.shape[-1], x.shape[-1]))
 
     if self._projection_dim is None:
-      prod_output = self._dense(x)
+      prod_output = self._dense(x)  # pyrefly: ignore[not-callable]
     else:
-      prod_output = self._dense_v(self._dense_u(x))
+      prod_output = self._dense_v(self._dense_u(x))  # pyrefly: ignore[not-callable]
 
     prod_output = tf.cast(prod_output, self.compute_dtype)
 
     if self._diag_scale:
-      prod_output = prod_output + self._diag_scale * x
+      prod_output = prod_output + self._diag_scale * x  # pyrefly: ignore[unsupported-operation]
 
     return x0 * prod_output + x
 

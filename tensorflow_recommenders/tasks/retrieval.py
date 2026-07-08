@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -207,7 +207,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
           scores,
           labels)
 
-    loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)
+    loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)  # pyrefly: ignore[not-callable]
 
     update_ops = []
     for metric in self._loss_metrics:

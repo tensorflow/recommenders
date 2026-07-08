@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -192,7 +192,7 @@ class Ranking(models.Model):
           "Got a length {len(inputs)} tuple instead: {inputs}."
       )
 
-    outputs = self(features, training=training)
+    outputs = self(features, training=training)  # pyrefly: ignore[not-callable]
 
     loss = self._task(labels, outputs, sample_weight=sample_weight)
     loss = tf.reduce_mean(loss)
@@ -212,7 +212,7 @@ class Ranking(models.Model):
     dense_features = inputs["dense_features"]
     sparse_features = inputs["sparse_features"]
 
-    sparse_embeddings = self._embedding_layer(sparse_features)
+    sparse_embeddings = self._embedding_layer(sparse_features)  # pyrefly: ignore[not-callable]
     # Combine a dictionary into a vector and squeeze dimension from
     # (batch_size, 1, emb) to (batch_size, emb).
     sparse_embeddings = tf.nest.flatten(sparse_embeddings)
@@ -220,10 +220,10 @@ class Ranking(models.Model):
     sparse_embedding_vecs = [
         tf.squeeze(sparse_embedding) for sparse_embedding in sparse_embeddings
     ]
-    dense_embedding_vec = self._bottom_stack(dense_features)
+    dense_embedding_vec = self._bottom_stack(dense_features)  # pyrefly: ignore[not-callable]
 
     interaction_args = sparse_embedding_vecs + [dense_embedding_vec]
-    interaction_output = self._feature_interaction(interaction_args)
+    interaction_output = self._feature_interaction(interaction_args)  # pyrefly: ignore[not-callable]
     if self._concat_dense:
       feature_interaction_output = tf.concat(
           [dense_embedding_vec, interaction_output], axis=1
@@ -231,7 +231,7 @@ class Ranking(models.Model):
     else:
       feature_interaction_output = interaction_output
 
-    prediction = self._top_stack(feature_interaction_output)
+    prediction = self._top_stack(feature_interaction_output)  # pyrefly: ignore[not-callable]
 
     return tf.reshape(prediction, [-1])
 

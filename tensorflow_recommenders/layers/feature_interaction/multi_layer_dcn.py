@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -113,7 +113,7 @@ class MultiLayerDCN(tf.keras.layers.Layer):
     last_dim = input_shape[-1]
     self._dense_u_kernels, self._dense_v_kernels = [], []
 
-    for _ in range(self._num_layers):
+    for _ in range(self._num_layers):  # pyrefly: ignore[bad-argument-type]
       self._dense_u_kernels.append(tf.keras.layers.Dense(
           self._projection_dim,
           kernel_initializer=_clone_initializer(self._kernel_initializer),
@@ -146,7 +146,7 @@ class MultiLayerDCN(tf.keras.layers.Layer):
 
     xl = x0
 
-    for i in range(self._num_layers):
+    for i in range(self._num_layers):  # pyrefly: ignore[bad-argument-type]
       prod_output = self._dense_v_kernels[i](self._dense_u_kernels[i](xl))
       xl = x0 * prod_output + xl
 

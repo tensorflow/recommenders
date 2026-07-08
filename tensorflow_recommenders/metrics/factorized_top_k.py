@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -131,7 +131,7 @@ class FactorizedTopK(Factorized):
       )
 
     positive_scores = tf.reduce_sum(
-        query_embeddings * true_candidate_embeddings, axis=1, keepdims=True)
+        query_embeddings * true_candidate_embeddings, axis=1, keepdims=True)  # pyrefly: ignore[unsupported-operation]
 
     top_k_predictions, retrieved_ids = self._candidates(
         query_embeddings, k=max(self._ks))

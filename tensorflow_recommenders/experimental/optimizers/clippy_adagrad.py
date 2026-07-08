@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -175,7 +175,7 @@ class ClippyAdagrad(tf.keras.optimizers.Optimizer):
           self.add_variable_from_reference(
               var,
               "accumulator",
-              initial_value=initializer(shape=var.shape, dtype=var.dtype),
+              initial_value=initializer(shape=var.shape, dtype=var.dtype),  # pyrefly: ignore[not-callable]
           ))
       if self.export_clipping_factors:
         self.clipping_factors.append(
@@ -220,7 +220,7 @@ class ClippyAdagrad(tf.keras.optimizers.Optimizer):
     delta = lr * grad_values * precondition
     clipped_delta, clipping_factor = shrink_by_references(
         delta,
-        references=[variable_values, precondition],
+        references=[variable_values, precondition],  # pyrefly: ignore[bad-argument-type]
         relative_factors=[
             self.variable_relative_threshold,
             self.accumulator_relative_threshold
@@ -235,7 +235,7 @@ class ClippyAdagrad(tf.keras.optimizers.Optimizer):
         # Clip the accumulator update: this acts like clipping the gradient
         # before sending it to the optimizer. This is a good option when the
         # gradient is an outlier.
-        accumulator_update = grad_values * clipping_factor
+        accumulator_update = grad_values * clipping_factor  # pyrefly: ignore[unsupported-operation]
       else:
         # Does not clip the accumulator update: This is a good option in cases
         # where the gradient increases during training, and allows for quicker

@@ -1,4 +1,4 @@
-# Copyright 2025 The TensorFlow Recommenders Authors.
+# Copyright 2026 The TensorFlow Recommenders Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     for _ in range(num):
       post_serialization_results = restored(tf.constant(query))
 
-    self.assertAllEqual(post_serialization_results, pre_serialization_results)
+    self.assertAllEqual(post_serialization_results, pre_serialization_results)  # pyrefly: ignore[unbound-name]
 
   def run_top_k_test(self,
                      layer_class,
@@ -121,13 +121,13 @@ class FactorizedTopKTestBase(tf.test.TestCase, parameterized.TestCase):
     expected_top_scores = np.take_along_axis(scores, indices, 1)
     expected_top_indices = candidate_indices[indices]
 
-    candidates = tf.data.Dataset.from_tensor_slices(candidates).batch(
+    candidates = tf.data.Dataset.from_tensor_slices(candidates).batch(  # pyrefly: ignore[bad-argument-type]
         batch_size)
 
     if indices_dtype is not None:
-      identifiers = tf.data.Dataset.from_tensor_slices(candidate_indices).batch(
+      identifiers = tf.data.Dataset.from_tensor_slices(candidate_indices).batch(  # pyrefly: ignore[bad-argument-type]
           batch_size)
-      candidates = tf.data.Dataset.zip((identifiers, candidates))
+      candidates = tf.data.Dataset.zip((identifiers, candidates))  # pyrefly: ignore[bad-argument-type]
 
     # Call twice to ensure the results are repeatable.
     for _ in range(2):
@@ -203,7 +203,7 @@ class ScannTest(FactorizedTopKTestBase):
 
     rng = np.random.RandomState(42)
     candidates = tf.data.Dataset.from_tensor_slices(
-        rng.normal(size=(num_candidates, 4)).astype(np.float32))
+        rng.normal(size=(num_candidates, 4)).astype(np.float32))  # pyrefly: ignore[bad-argument-type]
     query = rng.normal(size=(num_queries, 4)).astype(np.float32)
 
     scann = factorized_top_k.ScaNN()
@@ -217,9 +217,9 @@ class ScannTest(FactorizedTopKTestBase):
 
     rng = np.random.RandomState(42)
     candidates = tf.data.Dataset.from_tensor_slices(
-        rng.normal(size=(num_candidates, 4)).astype(np.float32))
+        rng.normal(size=(num_candidates, 4)).astype(np.float32))  # pyrefly: ignore[bad-argument-type]
     query = rng.normal(size=(num_queries, 4)).astype(np.float32)
-    identifiers = tf.data.Dataset.from_tensor_slices(np.arange(num_candidates))
+    identifiers = tf.data.Dataset.from_tensor_slices(np.arange(num_candidates))  # pyrefly: ignore[bad-argument-type]
 
     index = factorized_top_k.ScaNN()
     index.index_from_dataset(identifiers.zip(candidates).batch(100))
@@ -232,14 +232,14 @@ class ScannTest(FactorizedTopKTestBase):
 
     num_candidates = 100
     candidates = tf.data.Dataset.from_tensor_slices(
-        np.random.normal(size=(num_candidates, 4)).astype(np.float32))
+        np.random.normal(size=(num_candidates, 4)).astype(np.float32))  # pyrefly: ignore[bad-argument-type]
     identifiers = tf.data.Dataset.from_tensor_slices(
-        np.arange(num_candidates - 1))
+        np.arange(num_candidates - 1))  # pyrefly: ignore[bad-argument-type]
 
     with self.assertRaises(ValueError):
       index = layer_class()
       index.index_from_dataset(
-          tf.data.Dataset.zip((identifiers.batch(20), candidates.batch(100)))
+          tf.data.Dataset.zip((identifiers.batch(20), candidates.batch(100)))  # pyrefly: ignore[bad-argument-type]
       )
 
   @parameterized.parameters(test_cases())

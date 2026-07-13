@@ -70,7 +70,6 @@ class Ranking(tf.keras.layers.Layer, base.Task):
            labels: tf.Tensor,
            predictions: tf.Tensor,
            sample_weight: Optional[tf.Tensor] = None,
-           training: bool = False,
            compute_metrics: bool = True) -> tf.Tensor:
     """Computes the task loss and metrics.
 
@@ -78,7 +77,6 @@ class Ranking(tf.keras.layers.Layer, base.Task):
       labels: Tensor of labels.
       predictions: Tensor of predictions.
       sample_weight: Tensor of sample weights.
-      training: Indicator whether training or test loss is being computed.
       compute_metrics: Whether to compute metrics. Set this to False
         during training for faster training.
 

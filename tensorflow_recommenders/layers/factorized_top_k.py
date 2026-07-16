@@ -474,7 +474,7 @@ class Streaming(TopK):
     def enumerate_rows(batch: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
       """Enumerates rows in each batch using a total element counter."""
 
-      starting_counter = self._counter.read_value()
+      starting_counter = self._counter.value
       end_counter = self._counter.assign_add(tf.shape(batch)[0])
 
       return tf.range(starting_counter, end_counter), batch

@@ -212,7 +212,7 @@ class TopK(tf.keras.Model, abc.ABC):
       candidates = tf.concat(list(candidates), axis=0)
       identifiers = None
 
-    return self.index(candidates, identifiers)
+    return self.index(candidates, identifiers)  # pyrefly: ignore[bad-argument-type]
 
   @abc.abstractmethod
   def call(  # pyrefly: ignore[bad-override]

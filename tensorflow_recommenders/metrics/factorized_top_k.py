@@ -131,7 +131,7 @@ class FactorizedTopK(Factorized):
       )
 
     positive_scores = tf.reduce_sum(
-        query_embeddings * true_candidate_embeddings, axis=1, keepdims=True)  # pyrefly: ignore[unsupported-operation]
+        query_embeddings * true_candidate_embeddings, axis=1, keepdims=True)
 
     top_k_predictions, retrieved_ids = self._candidates(
         query_embeddings, k=max(self._ks))

@@ -207,7 +207,7 @@ class Retrieval(tf.keras.layers.Layer, base.Task):
           scores,
           labels)
 
-    loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)  # pyrefly: ignore[not-callable]
+    loss = self._loss(y_true=labels, y_pred=scores, sample_weight=sample_weight)
 
     update_ops = []
     for metric in self._loss_metrics:

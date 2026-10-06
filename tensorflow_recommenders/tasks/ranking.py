@@ -86,7 +86,7 @@ class Ranking(tf.keras.layers.Layer, base.Task):
       loss: Tensor of loss values.
     """
 
-    loss = self._loss(  # pyrefly: ignore[not-callable]
+    loss = self._loss(
         y_true=labels, y_pred=predictions, sample_weight=sample_weight)
 
     if not compute_metrics:

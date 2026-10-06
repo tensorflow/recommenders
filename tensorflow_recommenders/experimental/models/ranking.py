@@ -212,7 +212,7 @@ class Ranking(models.Model):
     dense_features = inputs["dense_features"]
     sparse_features = inputs["sparse_features"]
 
-    sparse_embeddings = self._embedding_layer(sparse_features)  # pyrefly: ignore[not-callable]
+    sparse_embeddings = self._embedding_layer(sparse_features)
     # Combine a dictionary into a vector and squeeze dimension from
     # (batch_size, 1, emb) to (batch_size, emb).
     sparse_embeddings = tf.nest.flatten(sparse_embeddings)
@@ -220,10 +220,10 @@ class Ranking(models.Model):
     sparse_embedding_vecs = [
         tf.squeeze(sparse_embedding) for sparse_embedding in sparse_embeddings
     ]
-    dense_embedding_vec = self._bottom_stack(dense_features)  # pyrefly: ignore[not-callable]
+    dense_embedding_vec = self._bottom_stack(dense_features)
 
     interaction_args = sparse_embedding_vecs + [dense_embedding_vec]
-    interaction_output = self._feature_interaction(interaction_args)  # pyrefly: ignore[not-callable]
+    interaction_output = self._feature_interaction(interaction_args)
     if self._concat_dense:
       feature_interaction_output = tf.concat(
           [dense_embedding_vec, interaction_output], axis=1
@@ -231,7 +231,7 @@ class Ranking(models.Model):
     else:
       feature_interaction_output = interaction_output
 
-    prediction = self._top_stack(feature_interaction_output)  # pyrefly: ignore[not-callable]
+    prediction = self._top_stack(feature_interaction_output)
 
     return tf.reshape(prediction, [-1])
 

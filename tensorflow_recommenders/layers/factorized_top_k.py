@@ -284,7 +284,7 @@ class TopK(tf.keras.Model, abc.ABC):
     k = k if k is not None else self._k
 
     adjusted_k = k + exclusions.shape[1]
-    x, y = self(queries=queries, k=adjusted_k)  # pyrefly: ignore[not-callable]
+    x, y = self(queries=queries, k=adjusted_k)
     return _exclude(x, y, exclude=exclusions, k=k)
 
   @abc.abstractmethod
@@ -389,7 +389,7 @@ class Streaming(TopK):
 
     return self
 
-  def index(  # pytype: disable=signature-mismatch  # overriding-parameter-type-checks
+  def index(  # pyrefly: ignore[bad-override]
       self,
       candidates: tf.data.Dataset,
       identifiers: Optional[tf.data.Dataset] = None,
@@ -416,7 +416,7 @@ class Streaming(TopK):
       )
 
     if self.query_model is not None:
-      queries = self.query_model(queries)  # pyrefly: ignore[not-callable]
+      queries = self.query_model(queries)
 
     # Reset the element counter.
     self._counter.assign(0)
@@ -598,7 +598,7 @@ class BruteForce(TopK):
       )
 
     if self.query_model is not None:
-      queries = self.query_model(queries)  # pyrefly: ignore[not-callable]
+      queries = self.query_model(queries)
 
     scores = self._compute_score(queries, self._candidates)  # pyrefly: ignore[bad-argument-type]
 
@@ -764,7 +764,7 @@ class ScaNN(TopK):
     searcher = scann_ops.searcher_from_module(self._serialized_searcher)
 
     if self.query_model is not None:
-      queries = self.query_model(queries)  # pyrefly: ignore[not-callable]
+      queries = self.query_model(queries)
 
     if not isinstance(queries, tf.Tensor):
       raise ValueError(f"Queries must be a tensor, got {type(queries)}.")

@@ -109,7 +109,7 @@ class Cross(tf.keras.layers.Layer):
 
     self._supports_masking = True
 
-    if self._diag_scale < 0:  # pytype: disable=unsupported-operands
+    if self._diag_scale < 0:  # pyrefly: ignore[unsupported-operation]
       raise ValueError(
           "`diag_scale` should be non-negative. Got `diag_scale` = {}".format(
               self._diag_scale))
@@ -174,14 +174,14 @@ class Cross(tf.keras.layers.Layer):
               x0.shape[-1], x.shape[-1]))
 
     if self._projection_dim is None:
-      prod_output = self._dense(x)  # pyrefly: ignore[not-callable]
+      prod_output = self._dense(x)
     else:
-      prod_output = self._dense_v(self._dense_u(x))  # pyrefly: ignore[not-callable]
+      prod_output = self._dense_v(self._dense_u(x))
 
     prod_output = tf.cast(prod_output, self.compute_dtype)
 
     if self._diag_scale:
-      prod_output = prod_output + self._diag_scale * x  # pyrefly: ignore[unsupported-operation]
+      prod_output = prod_output + self._diag_scale * x
 
     return x0 * prod_output + x
 

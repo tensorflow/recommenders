@@ -177,7 +177,8 @@ class FactorizedTopK(Factorized):
             tf.reduce_sum(ids_match[:, :k], axis=1, keepdims=True),
             0.0, 1.0
         )
-        update_ops.append(metric.update_state(match_found, sample_weight))
+        metric.update_state(match_found, sample_weight)
+        update_ops.append(metric.result())
     else:
       # Score-based evaluation.
       y_pred = tf.concat([positive_scores, top_k_predictions], axis=1)
@@ -189,7 +190,8 @@ class FactorizedTopK(Factorized):
             predictions=y_pred,
             k=k
         )
-        update_ops.append(metric.update_state(top_k_accuracy, sample_weight))
+        metric.update_state(top_k_accuracy, sample_weight)
+        update_ops.append(metric.result())
 
     return tf.group(update_ops)
   

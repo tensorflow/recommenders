@@ -19,6 +19,9 @@ on:
     paths:
       - '**.py'
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: PyLint
@@ -26,14 +29,18 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        persist-credentials: false
     - name: Get file changes
       id: get_file_changes
       uses: trilom/file-changes-action@v1.2.4
       with:
         output: ' '
     - name: Report list of changed files
+      env:
+        CHANGED_FILES: ${{ steps.get_file_changes.outputs.files }}
       run: |
-        echo Changed files: ${{ steps.get_file_changes.outputs.files }}
+        echo "Changed files: ${CHANGED_FILES}"
     - name: Set up Python 3.9
       uses: actions/setup-python@v2
       with:
@@ -43,5 +50,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install pylint numpy wheel
     - name: Run PyLint on changed files
+      env:
+        CHANGED_FILES: ${{ steps.get_file_changes.outputs.files }}
       run: |
-        echo "${{ steps.get_file_changes.outputs.files}}" | tr " " "\n" | grep ".py$" | xargs pylint --rcfile=.pylintrc
+        echo "${CHANGED_FILES}" | tr " " "\n" | grep ".py$" | xargs --no-run-if-empty pylint --rcfile=.pylintrc

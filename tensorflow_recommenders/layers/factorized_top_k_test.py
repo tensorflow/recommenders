@@ -180,6 +180,34 @@ class BruteForceTest(FactorizedTopKTestBase):
     self.run_top_k_test(factorized_top_k.BruteForce, *args, **kwargs)
 
 
+class ExclusionsTest(tf.test.TestCase, parameterized.TestCase):
+
+  @parameterized.parameters(
+      (factorized_top_k.BruteForce, False),
+      (factorized_top_k.BruteForce, True),
+      (factorized_top_k.Streaming, False),
+      (factorized_top_k.Streaming, True))
+  def test_large_scores_do_not_override_exclusions(self, index_type, string_ids):
+    identifiers = tf.constant(
+        ["seen", "first", "second"] if string_ids else [0, 1, 2])
+    candidates = tf.constant([[1000000.0], [3.0], [2.0]])
+    index = index_type(k=1).index_from_dataset(
+        tf.data.Dataset.from_tensor_slices((identifiers, candidates)).batch(2))
+    scores, result = index.query_with_exclusions(
+        tf.constant([[1.0]]), exclusions=identifiers[None, :1])
+    self.assertAllEqual(result, identifiers[None, 1:2])
+    self.assertAllClose(scores, [[3.0]])
+
+  @parameterized.parameters(tf.float16, tf.float32, tf.float64)
+  def test_exclude_preserves_score_dtype(self, dtype):
+    scores, identifiers = factorized_top_k._exclude(
+        tf.constant([[10000.0, 3.0, 2.0]], dtype=dtype),
+        tf.constant([[0, 1, 2]]), tf.constant([[0]]), k=2)
+    self.assertEqual(scores.dtype, dtype)
+    self.assertAllEqual(identifiers, [[1, 2]])
+    self.assertAllClose(scores, [[3.0, 2.0]])
+
+
 class ScannTest(FactorizedTopKTestBase):
 
   @parameterized.parameters(str, np.float32, np.float64, np.int32, np.int64)

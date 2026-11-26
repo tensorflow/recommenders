@@ -104,7 +104,7 @@ def _exclude(
   isin = tf.math.reduce_any(tf.math.equal(idents, exclude), -1)
 
   # Set the scores of the excluded candidates to a very low value.
-  adjusted_scores = scores - tf.cast(isin, tf.float32) * 1.0e5
+  adjusted_scores = tf.where(isin, tf.cast(float("-inf"), scores.dtype), scores)
 
   k = tf.math.minimum(k, tf.shape(scores)[1])
 
